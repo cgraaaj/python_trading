@@ -286,7 +286,7 @@ class Nse(AbstractBaseExchange):
 
     def get_stocks_of_sector(self, as_json=False, sector='Nifty 50'):
 
-        sectorkw = pd.read_csv(os.getcwd()+'/nsetools/sectorKeywords.csv')
+        sectorkw = pd.read_csv(os.getcwd()+'/Src/nsetools/sectorKeywords.csv')
         sectorkw.set_index('Sector',inplace=True)
         url = self.get_sector_url.format(sectorkw.loc[sector].iloc[0])
         req = Request(url, None, self.headers)
