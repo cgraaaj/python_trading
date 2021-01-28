@@ -62,14 +62,14 @@ class Strategies:
 
     # loops through the sectors for indices
     def run_in_sector(self, strategy, sec='Nifty 50', *args, **kwargs):
-        print('XXXXXXXXXXXXXXX{}XXXXXXXXXXXXXXXX'.format(sec))
+        # print('XXXXXXXXXXXXXXX{}XXXXXXXXXXXXXXXX'.format(sec))
         stocks_of_sector = pd.DataFrame(self.nse.get_stocks_of_sector(sector=sec))
         stocks_of_sector['symbol'].apply(lambda x: strategy(**kwargs,ticker=x))
         
         
     # returns result and exception if any
     def get_result(self):
-        return {'res':set(self.res),'excep':set(self.exception)}
+        return {'res':list(set(self.res)),'excep':list(set(self.exception))}
     
     # returns available strategies
     def get_strategies(self):
