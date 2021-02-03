@@ -1,15 +1,18 @@
 import pandas as pd
 import datetime as dt
 import logging
+import os
+import sys
+import json
 
+from sector import Sector
 from dateutil.relativedelta import relativedelta
 from nsetools.yahooFinance import YahooFinance as yf
 from nsetools.nse import Nse
 # from alpha_vantage.techindicators import TechIndicators
 
-
 logging.basicConfig(
-    filename="logs/"+dt.datetime.now().strftime("%d-%m-%Y")+".log",
+    filename="/home/pi/Trading/python_trading/Src/logs/"+dt.datetime.now().strftime("%d-%m-%Y")+".log",
     format='[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s',
     datefmt='%m-%d %H:%M:%S',
     level=logging.INFO,
@@ -17,14 +20,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class Strategies:
+class Driver:
     def __init__(self):
         # alphaVantage key
         # ti = TechIndicators(open('Src/alphaVantage_key.txt', 'r').read())
         # BSE data
         # bseData = pd.read_csv('/home/pudge/Desktop/PROJECTS/Python/trading/test/source.csv')
         self.res = []
-        self.dict_sector= {}
+        self.list_sector= []
         self.exception = []
         self.today = dt.date.today()
         self.nse = Nse()
@@ -80,18 +83,19 @@ class Strategies:
         logger.info("Sector: "+sec)
         stocks_of_sector = pd.DataFrame(self.nse.get_stocks_of_sector(sector=sec))
         stocks_of_sector['symbol'].apply(lambda x: strategy(**kwargs,ticker=x))
-        self.dict_sector[sec]=self.res
+        sector = Sector(sec,self.res)
+        logger.info("sector: "+json.dumps(sector.__dict__))
+        self.list_sector.append(sector.__dict__)
         self.res=[]
-        
-        
+ 
     # returns result and exception if any
     def get_result(self):
         # return {'stocks':list(set(self.res)),'excep':list(set(self.exception))}
-        return self.dict_sector
+        return self.list_sector
 
     def set_result(self):
         # return {'stocks':list(set(self.res)),'excep':list(set(self.exception))}
-         self.dict_sector={}    
+         self.list_sector=[]
     
     # returns available strategies
     def get_strategies(self):
