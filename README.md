@@ -1,2 +1,2 @@
 # StockMarketStategiesAnalyzer
-This is a python script to run strategies
+Python script to run strategies
