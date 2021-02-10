@@ -1,11 +1,9 @@
 import os
 import sys
-sys.path.append(os.path.realpath('..'))
 
-from data.mongodb import Mongodb
-
-db = Mongodb()
-doc = db.get_collection().find({})
-for d in doc:
-    for item in d:
-        print(item)
+LOCATE_PY_FILENAME = __file__
+LOCATE_PY_DIRECTORY_PATH = os.path.abspath(os.path.dirname(__file__))
+LOCATE_PY_PARENT_DIR = os.path.abspath(os.path.join(LOCATE_PY_DIRECTORY_PATH, ".."))
+print(LOCATE_PY_FILENAME)
+print(LOCATE_PY_DIRECTORY_PATH)
+print(LOCATE_PY_PARENT_DIR)
