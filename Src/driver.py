@@ -42,38 +42,51 @@ class Driver:
                 "fun": self.get_sma_slowFast,
                 "kwargs": {"slow": 100, "fast": 30},
             },
-            "Seven Day SMA50": {"fun": self.get_seven_day_data_sma50, "kwargs": {}},
+            "Seven Day Low SMA200": {
+                "fun": self.get_seven_day_low_sma200,
+                "kwargs": {},
+            },
+            "Seven Day High SMA200": {
+                "fun": self.get_seven_day_high_sma200,
+                "kwargs": {},
+            },
         }
         # self.strategies = {
-        #     "Seven Day SMA50": {"fun": self.get_seven_day_data_sma50, "kwargs": {}}
+        #     "Seven Day SMA200": {"fun": self.get_seven_day_low_sma200, "kwargs": {}}
         # }
 
-    # returns the indices which has ltp near to sma50 in last 7days
-    def get_seven_day_data_sma50(self, ticker="CUB"):
-        # logger.info("Stock :"+ticker)
+    # returns the indices which has ltp near to sma200 and low in last 7days refer this link https://www.youtube.com/watch?v=_9Bmxylp63Y
+    def get_seven_day_low_sma200(self, ticker="CUB"):
+        # logger.info("Stock is :" + ticker)
         sev_data = yf(ticker + ".NS", result_range="7d", interval="1d").result
         if sev_data.iloc[-1]["Close"] <= sev_data.iloc[0]["Close"]:
-            ticker_data = yf(ticker + ".NS", result_range="100d", interval="1d").result
-            ticker_data["sma_50"] = ticker_data["Close"].rolling(window=50).mean()
+            ticker_data = yf(ticker + ".NS", result_range="400d", interval="1d").result
+            ticker_data["sma_200"] = ticker_data["Close"].rolling(window=200).mean()
             if len(ticker_data.index) > 1:
                 if (
-                    ticker_data.iloc[-2]["sma_50"] > ticker_data.iloc[-2]["Close"]
-                    and ticker_data.iloc[-2]["sma_50"]
+                    ticker_data.iloc[-2]["sma_200"] > ticker_data.iloc[-2]["Close"]
+                    and ticker_data.iloc[-2]["sma_200"]
                     < (
                         ticker_data.iloc[-2]["Close"]
                         + (ticker_data.iloc[-2]["Close"] * 0.015)
                     )
                 ) or (
-                    ticker_data.iloc[-2]["sma_50"]
+                    ticker_data.iloc[-2]["sma_200"]
                     > (
                         ticker_data.iloc[-2]["Close"]
                         + (ticker_data.iloc[-2]["Close"] * 0.015)
                     )
-                    and ticker_data.iloc[-2]["sma_50"] < ticker_data.iloc[-2]["Close"]
+                    and ticker_data.iloc[-2]["sma_200"] < ticker_data.iloc[-2]["Close"]
                 ):
                     self.res.append(ticker)
             else:
                 self.exception.append(ticker)
+
+    # returns the indices which has ltp near to sma200 and high in last 7days
+    def get_seven_day_high_sma200(self, ticker="CUB"):
+        sev_data = yf(ticker + ".NS", result_range="7d", interval="1d").result
+        if sev_data.iloc[-1]["Close"] >= sev_data.iloc[0]["Close"]:
+            self.res.append(ticker)
 
     # returns the index of whose fastSMA cuts its slowSMA in last 4 days
     def get_sma_slowFast(self, ticker="CUB", slow=200, fast=50):
@@ -120,10 +133,10 @@ class Driver:
         # print('XXXXXXXXXXXXXXX{}XXXXXXXXXXXXXXXX'.format(sec))
         logger.info("Sector: " + sec)
         stocks_of_sector = pd.DataFrame(self.nse.get_stocks_of_sector(sector=sec))
-        stocks_of_sector["symbol"].apply(lambda x: strategy(**kwargs, ticker=x))
+        stocks_of_sector["symbol"].apply(lambda x: strategy(ticker=x, **kwargs))
         if len(self.res) > 0:
             sector = Sector(sec, self.res)
-            logger.info("sector: " + json.dumps(sector.__dict__))
+            # logger.info("sector: " + json.dumps(sector.__dict__))
             self.list_sector.append(sector.__dict__)
             self.res = []
 

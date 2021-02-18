@@ -48,7 +48,8 @@ for strat in strat_dict:
     strategy = Strategy(strat, dri.get_result())
     dri.set_result()
     logger.info("Strategy Result: {}".format(json.dumps(strategy.__dict__)))
-    result.append(strategy.__dict__)
+    if len(strategy.sectors) > 0:
+        result.append(strategy.__dict__)
 data = {"date": datetime.now().strftime("%d-%m-%Y"), "strategy": result}
 logger.info("Final data:{}".format(data))
 
@@ -59,4 +60,4 @@ resp = (
 )
 
 
-logger.info("db response: {0}".format(resp))
+logger.info("db response: {0}".format(resp.__dict__))
