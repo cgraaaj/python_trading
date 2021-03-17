@@ -1,9 +1,10 @@
+from time import time_ns
 import pandas as pd
 import datetime as dt
 import logging
 import os
-import sys
-import json
+import multiprocessing
+
 
 from sector import Sector
 from dateutil.relativedelta import relativedelta
@@ -32,8 +33,9 @@ class Driver:
         # ti = TechIndicators(open('Src/alphaVantage_key.txt', 'r').read())
         # BSE data
         # bseData = pd.read_csv('/home/pudge/Desktop/PROJECTS/Python/trading/test/source.csv')
-        self.res = []
-        self.list_sector = []
+        self.res = multiprocessing.Manager().list()
+        self.days_high_dict = multiprocessing.Manager().dict()
+        self.list_sector = multiprocessing.Manager().list()
         self.exception = []
         self.today = dt.date.today()
         self.nse = Nse()
@@ -128,14 +130,42 @@ class Driver:
         if len(res) > 30:
             self.res.append(ticker)
 
+    # returns the stocks which breaks the day's high at 10'o Clock
+    def days_high_break(self, ticker="CUB"):
+        ticker_data = yf(ticker + ".NS", result_range="1d", interval="5m").result
+        if ticker_data.iloc[-1]["Close"] > self.days_high_dict[ticker]:
+            self.res.append(ticker)
+
+    # sets days high of a ticker
+    def days_high(self, ticker="CUB"):
+        ticker_data = yf(ticker + ".NS", result_range="1d", interval="15m").result
+        self.days_high_dict[ticker] = ticker_data.head(3)["High"].max()
+
+    def tests(self):
+        return self.days_high_dict
+
     # loops through the sectors for indices
     def run_strategy(self, strategy, sec="Nifty 50", *args, **kwargs):
         # print('XXXXXXXXXXXXXXX{}XXXXXXXXXXXXXXXX'.format(sec))
         logger.info("Sector: " + sec)
         stocks_of_sector = pd.DataFrame(self.nse.get_stocks_of_sector(sector=sec))
-        stocks_of_sector["symbol"].apply(lambda x: strategy(ticker=x, **kwargs))
+        processes = []
+        for ticker in stocks_of_sector["symbol"]:
+            p = multiprocessing.Process(target=strategy, args=[ticker], kwargs=kwargs)
+            p.start()
+            processes.append(p)
+        for pros in processes:
+            pros.join()
+        # with concurrent.futures.ProcessPoolExecutor() as executor:
+        # [
+        #     executor.submit(strategy, id, **kwargs)
+        #     for id in stocks_of_sector["symbol"]
+        # ]
+        # executor.map(strategy, stocks_of_sector["symbol"])
+
+        # stocks_of_sector["symbol"].apply(lambda x: strategy(ticker=x, **kwargs))
         if len(self.res) > 0:
-            sector = Sector(sec, self.res)
+            sector = Sector(sec, list(self.res))
             # logger.info("sector: " + json.dumps(sector.__dict__))
             self.list_sector.append(sector.__dict__)
             self.res = []

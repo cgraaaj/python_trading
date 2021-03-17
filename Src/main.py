@@ -4,6 +4,8 @@ import sys
 import json
 import logging
 import requests
+import subprocess
+import calendar
 
 from strategy import Strategy
 from driver import Driver
@@ -37,6 +39,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# delete previos months logs
+previousMonth = datetime.now().month - 1 or 12
+if datetime.now().strftime("%d") == "17":
+    logger.warning(
+        "Deleting {} month's logs".format(calendar.month_name[previousMonth])
+    )
+    subprocess.call(
+        "{0}/logs/deleteLogs.sh {1}".format(
+            LOCATE_PY_DIRECTORY_PATH,
+            previousMonth if previousMonth / 10 > 1 else "0" + str(previousMonth),
+        ),
+        shell=True,
+    )
+
 strat_dict = dri.get_strategies()
 for strat in strat_dict:
     logger.info("Running Strategy: {}".format(strat))
@@ -45,7 +61,7 @@ for strat in strat_dict:
             sec=x, strategy=strat_dict[strat]["fun"], **strat_dict[strat]["kwargs"]
         )
     )
-    strategy = Strategy(strat, dri.get_result())
+    strategy = Strategy(strat, list(dri.get_result()))
     dri.set_result()
     logger.info("Strategy Result: {}".format(json.dumps(strategy.__dict__)))
     if len(strategy.sectors) > 0:
