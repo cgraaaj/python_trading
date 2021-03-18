@@ -34,6 +34,7 @@ from dateutil import parser
 from nsetools.bases import AbstractBaseExchange
 from nsetools.utils import byte_adaptor
 from nsetools.utils import js_adaptor
+
 # import paths differ in python 2 and python 3
 if six.PY2:
     from urllib2 import build_opener, HTTPCookieProcessor, Request
@@ -47,40 +48,41 @@ elif six.PY3:
 from nsetools.utils import byte_adaptor, js_adaptor
 from nsetools.datemgr import mkdate
 
+
 class Nse(AbstractBaseExchange):
     """
     class which implements all the functionality for
     National Stock Exchange
     """
+
     __CODECACHE__ = None
 
     def __init__(self):
         self.opener = self.nse_opener()
         self.headers = self.nse_headers()
         # URL list
-        self.get_quote_url = 'https://www1.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?'
-        self.stocks_csv_url = 'http://www1.nseindia.com/content/equities/EQUITY_L.csv'
-        self.top_gainer_url = 'http://www1.nseindia.com/live_market/dynaContent/live_analysis/gainers/niftyGainers1.json'
-        self.top_loser_url = 'http://www1.nseindia.com/live_market/dynaContent/live_analysis/losers/niftyLosers1.json'
-        self.top_fno_gainer_url\
-            = 'https://www1.nseindia.com/live_market/dynaContent/live_analysis/gainers/fnoGainers1.json'
-        self.top_fno_loser_url = 'https://www1.nseindia.com/live_market/dynaContent/live_analysis/losers/fnoLosers1.json'
-        self.advances_declines_url = 'http://www1.nseindia.com/common/json/indicesAdvanceDeclines.json'
-        self.index_url="http://www1.nseindia.com/homepage/Indices1.json"
+        self.get_quote_url = "https://www1.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?"
+        self.stocks_csv_url = "http://www1.nseindia.com/content/equities/EQUITY_L.csv"
+        self.top_gainer_url = "http://www1.nseindia.com/live_market/dynaContent/live_analysis/gainers/niftyGainers1.json"
+        self.top_loser_url = "http://www1.nseindia.com/live_market/dynaContent/live_analysis/losers/niftyLosers1.json"
+        self.top_fno_gainer_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/gainers/fnoGainers1.json"
+        self.top_fno_loser_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/losers/fnoLosers1.json"
+        self.advances_declines_url = (
+            "http://www1.nseindia.com/common/json/indicesAdvanceDeclines.json"
+        )
+        self.index_url = "http://www1.nseindia.com/homepage/Indices1.json"
         self.bhavcopy_base_url = "https://www1.nseindia.com/content/historical/EQUITIES/%s/%s/cm%s%s%sbhav.csv.zip"
         self.bhavcopy_base_filename = "cm%s%s%sbhav.csv"
-        self.active_equity_monthly_url =\
-            "https://www1.nseindia.com/products/dynaContent/equities/equities/json/mostActiveMonthly.json"
+        self.active_equity_monthly_url = "https://www1.nseindia.com/products/dynaContent/equities/equities/json/mostActiveMonthly.json"
         self.year_high_url = "https://www1.nseindia.com/products/dynaContent/equities/equities/json/online52NewHigh.json"
         self.year_low_url = "https://www1.nseindia.com/products/dynaContent/equities/equities/json/online52NewLow.json"
         self.preopen_nifty_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/pre_open/nifty.json"
         self.preopen_fno_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/pre_open/fo.json"
-        self.preopen_niftybank_url =\
-            "https://www1.nseindia.com/live_market/dynaContent/live_analysis/pre_open/niftybank.json"
+        self.preopen_niftybank_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/pre_open/niftybank.json"
         self.fno_lot_size_url = "https://www1.nseindia.com/content/fo/fo_mktlots.csv"
-        self.get_most_active__volume_url = 'https://www1.nseindia.com/live_market/dynaContent/live_analysis/most_active/allTopVolume1.json'
-        self.get_most_active__value_url = 'https://www1.nseindia.com/live_market/dynaContent/live_analysis/most_active/allTopValue1.json'
-        self.get_sector_url = 'https://www1.nseindia.com/live_market/dynaContent/live_watch/stock_watch/{}StockWatch.json'
+        self.get_most_active__volume_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/most_active/allTopVolume1.json"
+        self.get_most_active__value_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/most_active/allTopValue1.json"
+        self.get_sector_url = "https://www1.nseindia.com/live_market/dynaContent/live_watch/stock_watch/{}StockWatch.json"
 
     def get_fno_lot_sizes(self, cached=True, as_json=False):
         """
@@ -99,13 +101,17 @@ class Nse(AbstractBaseExchange):
                 # for py3 compat covert byte file like object to
                 # string file like object
                 res = byte_adaptor(res)
-                for line in res.read().split('\n'):
-                    if line != '' and re.search(',', line) and (line.casefold().find('symbol') == -1):
-                        (code, name) = [x.strip() for x in line.split(',')[1:3]]
+                for line in res.read().split("\n"):
+                    if (
+                        line != ""
+                        and re.search(",", line)
+                        and (line.casefold().find("symbol") == -1)
+                    ):
+                        (code, name) = [x.strip() for x in line.split(",")[1:3]]
                         res_dict[code] = int(name)
                     # else just skip the evaluation, line may not be a valid csv
             else:
-                raise Exception('no response received')
+                raise Exception("no response received")
             self.__CODECACHE__ = res_dict
         return self.render_response(self.__CODECACHE__, as_json)
 
@@ -126,13 +132,13 @@ class Nse(AbstractBaseExchange):
                 # for py3 compat covert byte file like object to
                 # string file like object
                 res = byte_adaptor(res)
-                for line in res.read().split('\n'):
-                    if line != '' and re.search(',', line):
-                        (code, name) = line.split(',')[0:2]
+                for line in res.read().split("\n"):
+                    if line != "" and re.search(",", line):
+                        (code, name) = line.split(",")[0:2]
                         res_dict[code] = name
                     # else just skip the evaluation, line may not be a valid csv
             else:
-                raise Exception('no response received')
+                raise Exception("no response received")
             self.__CODECACHE__ = res_dict
         return self.render_response(self.__CODECACHE__, as_json)
 
@@ -168,20 +174,19 @@ class Nse(AbstractBaseExchange):
             res = byte_adaptor(res)
             res = res.read()
             # Now parse the response to get the relevant data
-            match = re.search(\
-                        r'<div\s+id="responseDiv"\s+style="display:none">(.*?)</div>',
-                        res, re.S
-                    )
+            match = re.search(
+                r'<div\s+id="responseDiv"\s+style="display:none">(.*?)</div>', res, re.S
+            )
             try:
                 buffer = match.group(1).strip()
                 # commenting following two lines because now we are not using ast and instead
                 # relying on json's ability to do parsing. Should be much faster and more
-                # reliable. 
-                #buffer = js_adaptor(buffer)
-                #response = self.clean_server_response(ast.literal_eval(buffer)['data'][0])
-                response = self.clean_server_response(json.loads(buffer)['data'][0])
+                # reliable.
+                # buffer = js_adaptor(buffer)
+                # response = self.clean_server_response(ast.literal_eval(buffer)['data'][0])
+                response = self.clean_server_response(json.loads(buffer)["data"][0])
             except SyntaxError as err:
-                raise Exception('ill formatted response')
+                raise Exception("ill formatted response")
             else:
                 return self.render_response(response, as_json)
         else:
@@ -200,7 +205,7 @@ class Nse(AbstractBaseExchange):
         res = byte_adaptor(res)
         res_dict = json.load(res)
         # clean the output and make appropriate type conversions
-        res_list = [self.clean_server_response(item) for item in res_dict['data']]
+        res_list = [self.clean_server_response(item) for item in res_dict["data"]]
         return self.render_response(res_list, as_json)
 
     def get_top_losers(self, as_json=False):
@@ -216,8 +221,7 @@ class Nse(AbstractBaseExchange):
         res = byte_adaptor(res)
         res_dict = json.load(res)
         # clean the output and make appropriate type conversions
-        res_list = [self.clean_server_response(item)
-                    for item in res_dict['data']]
+        res_list = [self.clean_server_response(item) for item in res_dict["data"]]
         return self.render_response(res_list, as_json)
 
     def get_top_fno_gainers(self, as_json=False):
@@ -233,7 +237,7 @@ class Nse(AbstractBaseExchange):
         res = byte_adaptor(res)
         res_dict = json.load(res)
         # clean the output and make appropriate type conversions
-        res_list = [self.clean_server_response(item) for item in res_dict['data']]
+        res_list = [self.clean_server_response(item) for item in res_dict["data"]]
         return self.render_response(res_list, as_json)
 
     def get_top_fno_losers(self, as_json=False):
@@ -249,8 +253,7 @@ class Nse(AbstractBaseExchange):
         res = byte_adaptor(res)
         res_dict = json.load(res)
         # clean the output and make appropriate type conversions
-        res_list = [self.clean_server_response(item)
-                    for item in res_dict['data']]
+        res_list = [self.clean_server_response(item) for item in res_dict["data"]]
         return self.render_response(res_list, as_json)
 
     def get_advances_declines(self, as_json=False):
@@ -266,28 +269,32 @@ class Nse(AbstractBaseExchange):
         # string file like object
         resp = byte_adaptor(resp)
         resp_dict = json.load(resp)
-        resp_list = [self.clean_server_response(item)
-                     for item in resp_dict['data']]
+        resp_list = [self.clean_server_response(item) for item in resp_dict["data"]]
         return self.render_response(resp_list, as_json)
 
-    def get_most_active(self, as_json=False, by='volume'):
+    def get_most_active(self, as_json=False, by="volume"):
 
-        url = self.get_most_active__volume_url if by=='volume' else self.get_most_active__value_url
-        req = Request(url,None, self.headers)
+        url = (
+            self.get_most_active__volume_url
+            if by == "volume"
+            else self.get_most_active__value_url
+        )
+        req = Request(url, None, self.headers)
         # raises URLError or HTTPError
         resp = self.opener.open(req)
         # for py3 compat covert byte file like object to
         # string file like object
         resp = byte_adaptor(resp)
         resp_dict = json.load(resp)
-        resp_list = [self.clean_server_response(item)
-                     for item in resp_dict['data']]
+        resp_list = [self.clean_server_response(item) for item in resp_dict["data"]]
         return self.render_response(resp_list, as_json)
 
-    def get_stocks_of_sector(self, as_json=False, sector='Nifty 50'):
+    LOCATE_PY_DIRECTORY_PATH = os.path.abspath(os.path.dirname(__file__))
 
-        sectorkw = pd.read_csv(os.getcwd()+'/nsetools/sectorKeywords.csv')
-        sectorkw.set_index('Sector',inplace=True)
+    def get_stocks_of_sector(self, as_json=False, sector="Nifty 50"):
+
+        sectorkw = pd.read_csv("{}/sectorKeywords.csv".format(self.LOCATE_PY_DIRECTORY_PATH))
+        sectorkw.set_index("Sector", inplace=True)
         url = self.get_sector_url.format(sectorkw.loc[sector].iloc[0])
         req = Request(url, None, self.headers)
         # raises URLError or HTTPError
@@ -296,13 +303,11 @@ class Nse(AbstractBaseExchange):
         # string file like object
         resp = byte_adaptor(resp)
         resp_dict = json.load(resp)
-        resp_list = [self.clean_server_response(item)
-                     for item in resp_dict['data']]
+        resp_list = [self.clean_server_response(item) for item in resp_dict["data"]]
         return self.render_response(resp_list, as_json)
 
-
     def get_index_list(self, as_json=False):
-        """ get list of indices and codes
+        """get list of indices and codes
         params:
             as_json: True | False
         returns: a list | json of index codes
@@ -313,8 +318,8 @@ class Nse(AbstractBaseExchange):
         # raises URLError or HTTPError
         resp = self.opener.open(req)
         resp = byte_adaptor(resp)
-        resp_list = json.load(resp)['data']
-        index_list = [str(item['name']) for item in resp_list]
+        resp_list = json.load(resp)["data"]
+        index_list = [str(item["name"]) for item in resp_list]
         return self.render_response(index_list, as_json)
 
     def get_active_monthly(self, as_json=False):
@@ -325,7 +330,7 @@ class Nse(AbstractBaseExchange):
 
     def get_year_low(self, as_json=False):
         return self._get_json_response_from_url(self.year_low_url, as_json)
-    
+
     def get_preopen_nifty(self, as_json=False):
         return self._get_json_response_from_url(self.preopen_nifty_url, as_json)
 
@@ -347,8 +352,7 @@ class Nse(AbstractBaseExchange):
         res = byte_adaptor(res)
         res_dict = json.load(res)
         # clean the output and make appropriate type conversions
-        res_list = [self.clean_server_response(item)
-                    for item in res_dict['data']]
+        res_list = [self.clean_server_response(item) for item in res_dict["data"]]
         return self.render_response(res_list, as_json)
 
     def is_valid_index(self, code):
@@ -372,14 +376,13 @@ class Nse(AbstractBaseExchange):
             # raises HTTPError and URLError
             resp = self.opener.open(req)
             resp = byte_adaptor(resp)
-            resp_list = json.load(resp)['data']
+            resp_list = json.load(resp)["data"]
             # this is list of dictionaries
-            resp_list = [self.clean_server_response(item)
-                         for item in resp_list]
+            resp_list = [self.clean_server_response(item) for item in resp_list]
             # search the right list element to return
             search_flag = False
             for item in resp_list:
-                if item['name'] == code.upper():
+                if item["name"] == code.upper():
                     search_flag = True
                     break
             return self.render_response(item, as_json) if search_flag else None
@@ -389,12 +392,13 @@ class Nse(AbstractBaseExchange):
         Builds right set of headers for requesting http://nseindia.com
         :return: a dict with http headers
         """
-        return {'Accept': '*/*',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Host': 'www1.nseindia.com',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
-                'X-Requested-With': 'XMLHttpRequest'
-                }
+        return {
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Host": "www1.nseindia.com",
+            "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0",
+            "X-Requested-With": "XMLHttpRequest",
+        }
 
     def nse_opener(self):
         """
@@ -411,10 +415,17 @@ class Nse(AbstractBaseExchange):
         :return: a url object
         """
         if code is not None and type(code) is str:
-            encoded_args = urlencode([('symbol', code), ('illiquid', '0'), ('smeFlag', '0'), ('itpFlag', '0')])
+            encoded_args = urlencode(
+                [
+                    ("symbol", code),
+                    ("illiquid", "0"),
+                    ("smeFlag", "0"),
+                    ("itpFlag", "0"),
+                ]
+            )
             return self.get_quote_url + encoded_args
         else:
-            raise Exception('code must be string')
+            raise Exception("code must be string")
 
     def clean_server_response(self, resp_dict):
         """cleans the server reponse by replacing:
@@ -431,15 +442,15 @@ class Nse(AbstractBaseExchange):
         resp_dict = d
         for key, value in resp_dict.items():
             if type(value) is str or isinstance(value, six.string_types):
-                if re.match('-', value):
+                if re.match("-", value):
                     try:
                         if float(value) or int(value):
                             dataType = True
                     except ValueError:
                         resp_dict[key] = None
-                elif re.search(r'^[0-9,.]+$', value):
+                elif re.search(r"^[0-9,.]+$", value):
                     # replace , to '', and type cast to int
-                    resp_dict[key] = float(re.sub(',', '', value))
+                    resp_dict[key] = float(re.sub(",", "", value))
                 else:
                     resp_dict[key] = str(value)
         return resp_dict
@@ -491,7 +502,7 @@ class Nse(AbstractBaseExchange):
         string representation of object
         :return: string
         """
-        return 'Driver Class for National Stock Exchange (NSE)'
+        return "Driver Class for National Stock Exchange (NSE)"
 
 
 if __name__ == "__main__":

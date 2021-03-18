@@ -60,6 +60,7 @@ class YahooFinance:
         df_dict = {'Open': opens, 'High': highs, 'Low': lows, 'Close': closes, 'Volume': volumes}
         df = pd.DataFrame(df_dict, index=timestamps)
         df.index = pd.to_datetime(df.index)
+        df.rename_axis(index='date', columns="ohlcv")
         return df
 
     def _round_of_list(self, xlist):

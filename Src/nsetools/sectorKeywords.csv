@@ -2,10 +2,7 @@ Sector,Keyword
 Nifty 50,nifty
 Nifty Next 50,juniorNifty
 Nifty Midcap 50,niftyMidcap50
-Nifty Midcap 150,niftyMidcap150Online
 Nifty Smallcap 50,niftySmallcap50Online
-Nifty Smallcap 250,niftySmallcap250Online
-Nifty Midcap 400,niftyMidsml400Online
 Nifty Auto,cnxAuto
 Nifty Bank,bankNifty
 Nifty Energy,cnxEnergy
@@ -18,3 +15,4 @@ Nifty Pharma,cnxPharma
 Nifty PSU Bank,cnxPSU
 Nifty Realty,cnxRealty
 Nifty Private Bank,niftyPvtBank
+FO Stocks,foSec
