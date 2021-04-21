@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # delete previos months logs
 previousMonth = datetime.now().month - 1 or 12
-if datetime.now().strftime("%d") == "17":
+if int(datetime.now().strftime("%d")) >= 1:
     logger.warning(
         "Deleting {} month's logs".format(calendar.month_name[previousMonth])
     )
