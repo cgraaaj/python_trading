@@ -39,7 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# delete previos months logs
+# delete previous months logs
 previousMonth = datetime.now().month - 1 or 12
 if int(datetime.now().strftime("%d")) >= 1:
     logger.warning(

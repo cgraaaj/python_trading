@@ -164,7 +164,15 @@ class Driver:
     def days_high_break(self, ticker="CUB.NS"):
         ticker_data = yf(ticker, result_range="1d", interval="5m").result
         if ticker_data.iloc[-2]["Close"] > self.days_high_dict[ticker]:
-            self.res.append(ticker if ".NS" not in ticker else ticker.split(".")[0])
+            data = {
+                ticker
+                if ".NS" not in ticker
+                else ticker.split(".")[0]: {
+                    "day_high": self.days_high_dict[ticker],
+                    "crnt_val": ticker_data.iloc[-2]["Close"],
+                }
+            }
+            self.res.append(data)
             logger_tele.info(
                 "{} has broke todays high {} with value {}".format(
                     ticker, self.days_high_dict[ticker], ticker_data.iloc[-2]["Close"]

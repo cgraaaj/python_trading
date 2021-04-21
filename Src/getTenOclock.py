@@ -16,19 +16,26 @@ LOCATE_PY_DIRECTORY_PATH = os.path.abspath(os.path.dirname(__file__))
 dri = Driver()
 res = {}
 toSend = []
-toSend_old = []
+oldStocks = []
+stocks = {}
 bot = telegram.Bot(token="1667958437:AAHD9dnq51iuNeZDPa9gDhtJSCSTza4thto")
 
 
 def send_stocks(id):
     bot.sendMessage(chat_id=id, text="Alert, These stocks broke days high...")
     for stock in toSend:
-        bot.sendMessage(chat_id=id, text="{} has broke todays high {} with ")
+        bot.sendMessage(
+            chat_id=id,
+            text="{} has broke {} with {}".format(
+                stock, stocks[stock]["day_high"], stocks[stock]["crnt_val"]
+            ),
+        )
 
 
 def getStocks(trade):
     global toSend
-    global toSend_old
+    global stocks
+    global oldStocks
     if trade == "equity":
         dri.run_strategy(sec="FO Stocks", strategy=dri.days_high_break)
     elif trade == "bitcoin":
@@ -36,38 +43,38 @@ def getStocks(trade):
             sec=marketcap_BTCs_USD.split(","), strategy=dri.days_high_break
         )
     res["time"] = datetime.now().strftime("%H:%M:%S")
-    res["stocks"] = list(dri.get_result()[0]["stocks"])
-    dri.set_result()
-    print(res["stocks"])
-    print(toSend)
-    toSend = list(set(res["stocks"]) - set(toSend_old))
-    print(toSend)
-    file1 = open("{}/data/chat_ids.txt".format(LOCATE_PY_DIRECTORY_PATH), "r")
-    chat_ids = file1.readlines()
+    try:
+        res["stocks"] = list(dri.get_result()[0]["stocks"])
+        dri.set_result()
+        for x in res["stocks"]:
+            stocks.update(x)
+        res["stocks"] = list(stocks.keys())
+        toSend = list(set(res["stocks"]) - set(oldStocks))
+        file1 = open("{}/data/chat_ids.txt".format(LOCATE_PY_DIRECTORY_PATH), "r")
+        chat_ids = file1.readlines()
+        # processes = []
+        # for id in chat_ids:
+        #     p = multiprocessing.Process(target=send_stocks, args=[id, res["stocks"]])
+        #     p.start()
+        #     processes.append(p)
+        # for pros in processes:
+        #     pros.join()
+        if len(toSend) > 0:
+            with concurrent.futures.ProcessPoolExecutor() as executor:
+                executor.map(send_stocks, chat_ids)
+            # results = [executor.submit(send_stocks, id, res["stocks"]) for id in chat_ids]
+            # to get results of that function
+            # for f in concurrent.futures.as_completed(results):
+            #     print(f.result())
 
-    # processes = []
-    # for id in chat_ids:
-    #     p = multiprocessing.Process(target=send_stocks, args=[id, res["stocks"]])
-    #     p.start()
-    #     processes.append(p)
-    # for pros in processes:
-    #     pros.join()
-    if len(toSend) > 0:
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            executor.map(send_stocks, chat_ids)
-        # results = [executor.submit(send_stocks, id, res["stocks"]) for id in chat_ids]
-        # to get results of that function
-        # for f in concurrent.futures.as_completed(results):
-        #     print(f.result())
-
-        with open("/home/pi/telegramBOT/stock_bot/data/data.json", "a") as outfile:
-            outfile.write("\n")
-            json.dump(toSend, outfile)
-    if not toSend:
-        toSend = toSend_old
-    else:
-        toSend_old = toSend_old + toSend
-    print("--- %s seconds ---" % (time.time() - start_time))
+            with open("/home/pi/telegramBOT/stock_bot/data/data.json", "a") as outfile:
+                outfile.write("\n")
+                json.dump(toSend, outfile)
+        if toSend:
+            oldStocks = oldStocks + toSend
+        print("--- %s seconds ---" % (time.time() - start_time))
+    except:
+        print("no stock has broke day's high")
 
 
 # dri.run_strategy(sec="FO Stocks", strategy=dri.days_high)
@@ -83,10 +90,8 @@ elif trade == "bitcoin":
 else:
     print("Give some arguments like equity or bitcoin")
 
-days_high = dri.get_days_high_dict()
 # time.sleep(60 * 4)
 time.sleep(10)
-print(dri.tests())
 # from 10:15 to 3:30
 t_end = time.time() + 60 * ((5 * 60) + 15)
 while time.time() < t_end:
