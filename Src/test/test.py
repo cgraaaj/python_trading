@@ -1,15 +1,17 @@
-import os
 import sys
+import json
+from datetime import datetime
+import os
+import subprocess
 
-from utils.stoploss import atr
-from nsetools.yahooFinance import YahooFinance as yf
-
-# LOCATE_PY_FILENAME = __file__
-# LOCATE_PY_DIRECTORY_PATH = os.path.abspath(os.path.dirname(__file__))
-# LOCATE_PY_PARENT_DIR = os.path.abspath(os.path.join(LOCATE_PY_DIRECTORY_PATH, ".."))
-# print(LOCATE_PY_FILENAME)
-# print(LOCATE_PY_DIRECTORY_PATH)
-# print(LOCATE_PY_PARENT_DIR)
-
-ticker = "CUB"
-atr(yf(ticker + ".NS", result_range="7d", interval="1d").result)
+# res = ["a", "b"]
+# print("hai " + sys.argv[1] + json.dumps(res))
+LOCATE_PY_DIRECTORY_PATH = os.path.abspath(os.path.dirname(__file__))
+previousMonth = datetime.now().month - 1 or 12
+subprocess.call(
+    "{0}/logs/deleteLogs.sh {1}".format(
+        LOCATE_PY_DIRECTORY_PATH,
+        previousMonth if previousMonth / 10 > 1 else "0" + str(previousMonth),
+    ),
+    shell=True,
+)
