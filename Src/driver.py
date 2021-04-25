@@ -4,6 +4,7 @@ import datetime as dt
 import logging
 import os
 import multiprocessing
+import numpy as np
 
 
 from sector import Sector
@@ -69,20 +70,6 @@ class Driver:
         self.exception = []
         self.today = dt.date.today()
         self.nse = Nse()
-        self.strategies = {
-            "Slow fast SMA": {
-                "fun": self.get_sma_slowFast,
-                "kwargs": {"slow": 100, "fast": 30},
-            },
-            "Seven Day Low SMA200": {
-                "fun": self.get_seven_day_low_sma200,
-                "kwargs": {},
-            },
-            "Seven Day High SMA200": {
-                "fun": self.get_seven_day_high_sma200,
-                "kwargs": {},
-            },
-        }
         # self.strategies = {
         #     "Seven Day SMA200": {"fun": self.get_seven_day_low_sma200, "kwargs": {}}
         # }
@@ -161,28 +148,46 @@ class Driver:
             self.res.append(ticker.split(".")[0])
 
     # returns the stocks which breaks the day's high at 10'o Clock
-    def days_high_break(self, ticker="CUB.NS"):
+    def get_todays_stock(self, ticker="CUB.NS"):
         ticker_data = yf(ticker, result_range="1d", interval="5m").result
-        if ticker_data.iloc[-2]["Close"] > self.days_high_dict[ticker]:
+        if ticker_data.iloc[-2]["Close"] > self.days_high_dict[ticker]["high"]:
             data = {
-                ticker
-                if ".NS" not in ticker
-                else ticker.split(".")[0]: {
-                    "day_high": self.days_high_dict[ticker],
-                    "crnt_val": ticker_data.iloc[-2]["Close"],
-                }
+                "stock": ticker if ".NS" not in ticker else ticker.split(".")[0],
+                "day_high": self.days_high_dict[ticker]["high"],
+                "brk_val": ticker_data.iloc[-2]["Close"],
+                "trade": "Buy",
             }
             self.res.append(data)
             logger_tele.info(
                 "{} has broke todays high {} with value {}".format(
-                    ticker, self.days_high_dict[ticker], ticker_data.iloc[-2]["Close"]
+                    ticker,
+                    self.days_high_dict[ticker]["high"],
+                    ticker_data.iloc[-2]["Close"],
+                )
+            )
+        elif ticker_data.iloc[-2]["Close"] < self.days_high_dict[ticker]["low"]:
+            data = {
+                "stock": ticker if ".NS" not in ticker else ticker.split(".")[0],
+                "day_low": self.days_high_dict[ticker]["low"],
+                "brk_val": ticker_data.iloc[-2]["Close"],
+                "trade": "Sell",
+            }
+            self.res.append(data)
+            logger_tele.info(
+                "{} has broke todays low {} with value {}".format(
+                    ticker,
+                    self.days_high_dict[ticker]["low"],
+                    ticker_data.iloc[-2]["Close"],
                 )
             )
 
     # sets days high of a ticker
-    def days_high(self, ticker="CUB.NS"):
+    def days_high_low(self, ticker="CUB.NS"):
         ticker_data = yf(ticker, result_range="1d", interval="15m").result
-        self.days_high_dict[ticker] = ticker_data.head(3)["High"].max()
+        self.days_high_dict[ticker] = {
+            "high": ticker_data.head(3)["High"].max(),
+            "low": ticker_data.head(3)["Low"].min(),
+        }
 
     def get_days_high_dict(self):
         return self.days_high_dict
@@ -193,8 +198,25 @@ class Driver:
         if type(sec) is list:
             stocks_of_sector = pd.DataFrame(sec, columns=["symbol"])
         else:
-            logger.info("Sector: " + sec)
+            if "days_high_break" not in strategy.__name__:
+                logger.info("Sector: " + sec)
             stocks_of_sector = pd.DataFrame(self.nse.get_stocks_of_sector(sector=sec))
+            # check the manual watchlist file has some data
+            if (
+                os.stat(
+                    "{}/data/watchlist.txt".format(LOCATE_PY_DIRECTORY_PATH)
+                ).st_size
+                != 0
+            ):
+                watchlist = open(
+                    "{}/data/watchlist.txt".format(LOCATE_PY_DIRECTORY_PATH), "r"
+                )
+                # removes /n or empty spaces for each stock
+                watchlist = [stock.strip() for stock in watchlist]
+                # adds watchlist to the actual stocks of sector
+                stocks_of_sector = stocks_of_sector.append(
+                    pd.DataFrame(watchlist, columns=["symbol"]), ignore_index=True
+                )
             stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(
                 lambda x: x + ".NS"
             )
@@ -220,14 +242,30 @@ class Driver:
             self.res = multiprocessing.Manager().list()
 
     # returns result and exception if any
-    def get_result(self):
+    @property
+    def result(self):
         # return {'stocks':list(set(self.res)),'excep':list(set(self.exception))}
         return self.list_sector
 
-    def set_result(self):
+    @result.setter
+    def result(self, value):
         # return {'stocks':list(set(self.res)),'excep':list(set(self.exception))}
         self.list_sector = multiprocessing.Manager().list()
 
     # returns available strategies
-    def get_strategies(self):
-        return self.strategies
+    @property
+    def strategies(self):
+        return {
+            "Slow fast SMA": {
+                "fun": self.get_sma_slowFast,
+                "kwargs": {"slow": 100, "fast": 30},
+            },
+            "Seven Day Low SMA200": {
+                "fun": self.get_seven_day_low_sma200,
+                "kwargs": {},
+            },
+            "Seven Day High SMA200": {
+                "fun": self.get_seven_day_high_sma200,
+                "kwargs": {},
+            },
+        }

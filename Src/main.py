@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # delete previous months logs
 previousMonth = datetime.now().month - 1 or 12
-if int(datetime.now().strftime("%d")) >= 1:
+if int(datetime.now().strftime("%d")) <= 3:
     logger.warning(
         "Deleting {} month's logs".format(calendar.month_name[previousMonth])
     )
@@ -53,7 +53,7 @@ if int(datetime.now().strftime("%d")) >= 1:
         shell=True,
     )
 
-strat_dict = dri.get_strategies()
+strat_dict = dri.strategies
 for strat in strat_dict:
     logger.info("Running Strategy: {}".format(strat))
     sectorkw["Sector"].apply(
@@ -61,8 +61,8 @@ for strat in strat_dict:
             sec=x, strategy=strat_dict[strat]["fun"], **strat_dict[strat]["kwargs"]
         )
     )
-    strategy = Strategy(strat, list(dri.get_result()))
-    dri.set_result()
+    strategy = Strategy(strat, list(dri.result))
+    dri.result = ""
     logger.info("Strategy Result: {}".format(json.dumps(strategy.__dict__)))
     if len(strategy.sectors) > 0:
         result.append(strategy.__dict__)
