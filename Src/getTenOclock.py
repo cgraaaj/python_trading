@@ -5,7 +5,10 @@ import telegram
 import time
 import sys
 import pandas as pd
+import math
 from dotenv import load_dotenv
+import datetime as dt
+import logging
 
 from driver import Driver
 from datetime import datetime
@@ -16,6 +19,29 @@ start_time = time.time()
 LOCATE_PY_DIRECTORY_PATH = os.path.abspath(os.path.dirname(__file__))
 load_dotenv("{}/.env".format(LOCATE_PY_DIRECTORY_PATH))
 
+log_formatter = logging.Formatter(
+    "%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
+    "%m-%d %H:%M:%S",
+)
+
+
+def setup_logger(name, log_file, level=logging.INFO):
+    """To setup as many loggers as you want"""
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(log_formatter)
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+    return logger
+
+
+logger = setup_logger(
+    "default",
+    "{}/logs_tele/".format(LOCATE_PY_DIRECTORY_PATH)
+    + dt.datetime.now().strftime("%d-%m-%Y")
+    + "_portfolio.log",
+)
+
 dri = Driver()
 res = {}
 toSend = []
@@ -24,6 +50,7 @@ oldStocksBuy = []
 oldStocksSell = []
 stocks = {}
 capital = 100000
+portfolio = pd.DataFrame(columns=["stock", "boughtAt", "soldAt", "quantity", "P_L"])
 bot = telegram.Bot(token=os.getenv("STOCK_BOT_TOKEN"))
 
 
@@ -50,6 +77,7 @@ def getStocks(trade):
     global oldStocksBuy
     global oldStocksSell
     global dfFinal
+    global portfolio
     if trade == "equity":
         dri.run_strategy(sec="FO Stocks", strategy=dri.get_todays_stock)
     elif trade == "bitcoin":
@@ -61,21 +89,16 @@ def getStocks(trade):
         res["stocks"] = list(dri.result[0]["stocks"])
         df = pd.DataFrame(res["stocks"])
         df.set_index("stock", inplace=True)
-        print(df)
         if "day_high" in df.columns:
             dfBuy = pd.DataFrame(df[df["day_high"].notnull()])
             toSendB = list(set(dfBuy.index.values.tolist()) - set(oldStocksBuy))
-            print(toSendB)
             dfBuy = dfBuy[dfBuy.index.isin(toSendB)]
-            print(dfBuy)
             if toSendB:
                 oldStocksBuy = oldStocksBuy + toSendB
         if "day_low" in df.columns:
             dfSell = pd.DataFrame(df[df["day_low"].notnull()])
             toSendS = list(set(dfSell.index.values.tolist()) - set(oldStocksSell))
-            print(toSendS)
             dfSell = dfSell[dfSell.index.isin(toSendS)]
-            print(dfSell)
             if toSendS:
                 oldStocksSell = oldStocksSell + toSendS
 
@@ -87,7 +110,29 @@ def getStocks(trade):
         else:
             dfFinal = pd.concat([dfBuy, dfSell])
         print(dfFinal)
-
+        for index, row in dfFinal.iterrows():
+            if row["brk_val"] <= 5000:
+                if "Buy" in row["trade"]:
+                    df = {
+                        "stock": index,
+                        "boughtAt": row["brk_val"],
+                        "soldAt": 0,
+                        "quantity": math.floor(5000 / row["brk_val"]),
+                        "P_L": 0,
+                    }
+                else:
+                    df = {
+                        "stock": index,
+                        "boughtAt": 0,
+                        "soldAt": row["brk_val"],
+                        "quantity": math.floor(5000 / row["brk_val"]),
+                        "P_L": 0,
+                    }
+                portfolio = portfolio.append(df, ignore_index=True)
+        print("*******PORTFOLIO*********")
+        print(portfolio)
+        logger.info(portfolio)
+        portfolio.to_csv("days_PL.csv")
         file1 = open("{}/data/chat_ids.txt".format(LOCATE_PY_DIRECTORY_PATH), "r")
         chat_ids = file1.readlines()
         # processes = []
@@ -129,7 +174,38 @@ else:
 # time.sleep(60 * 4)
 time.sleep(10)
 # from 10:15 to 3:30
-t_end = time.time() + 60 * ((7 * 60) + 15)
+t_end = time.time() + (60 * ((5 * 60) + 15))
+sqr_off_time = time.time() + (60 * (5 * 60))
+# sqr_off_time = time.time() + (60 * (5 * 60))
 while time.time() < t_end:
+    print(
+        "the current time is {} and the end time is {}".format(
+            time.strftime("%H:%M:%S", time.localtime(time.time())),
+            time.strftime("%H:%M:%S", time.localtime(t_end)),
+        )
+    )
     getStocks(trade)
+    if time.time() > sqr_off_time:
+        portfolio.set_index("stock", inplace=True)
+        print("*********SQUARING OFF***********")
+        logger.info("*********SQUARING OFF***********")
+        for index, row in portfolio.iterrows():
+            closeVal = dri.get_ticker_data(
+                interval="1d", range="5m", ticker=index + ".NS"
+            ).iloc[-2]["Close"]
+            if row["soldAt"] == 0:
+                portfolio.at[index, "soldAt"] = closeVal
+                portfolio.at[index, "P_L"] = (closeVal - row["boughtAt"]) * row[
+                    "quantity"
+                ]
+            else:
+                portfolio.at[index, "boughtAt"] = closeVal
+                portfolio.at[index, "P_L"] = (row["soldAt"] - closeVal) * row[
+                    "quantity"
+                ]
+        print(portfolio)
+        logger.info(portfolio)
+        print("today's outcome:{}".format(portfolio["P_L"].sum()))
+        logger.info("today's outcome:{}".format(portfolio["P_L"].sum()))
+        exit()
     time.sleep(300.0 - (time.time() - start_time) % 300.0)

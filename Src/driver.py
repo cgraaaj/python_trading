@@ -5,6 +5,7 @@ import logging
 import os
 import multiprocessing
 import numpy as np
+import pandas as pd
 
 
 from sector import Sector
@@ -149,8 +150,9 @@ class Driver:
 
     # returns the stocks which breaks the day's high at 10'o Clock
     def get_todays_stock(self, ticker="CUB.NS"):
-        ticker_data = yf(ticker, result_range="1d", interval="5m").result
+        ticker_data = yf(ticker, result_range="1d", interval="1m").result
         if ticker_data.iloc[-2]["Close"] > self.days_high_dict[ticker]["high"]:
+
             data = {
                 "stock": ticker if ".NS" not in ticker else ticker.split(".")[0],
                 "day_high": self.days_high_dict[ticker]["high"],
@@ -189,8 +191,9 @@ class Driver:
             "low": ticker_data.head(3)["Low"].min(),
         }
 
-    def get_days_high_dict(self):
-        return self.days_high_dict
+    def get_ticker_data(self, interval, range, ticker="CUB.NS"):
+        ticker_data = yf(ticker, result_range=range, interval=interval).result
+        return ticker_data
 
     # loops through the sectors for indices
     def run_strategy(self, strategy, sec="Nifty 50", *args, **kwargs):
@@ -246,6 +249,10 @@ class Driver:
     def result(self):
         # return {'stocks':list(set(self.res)),'excep':list(set(self.exception))}
         return self.list_sector
+
+    @property
+    def day_high_dict(self):
+        return self.days_high_dict
 
     @result.setter
     def result(self, value):
