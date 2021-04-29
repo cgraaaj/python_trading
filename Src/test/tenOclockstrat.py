@@ -65,12 +65,16 @@ def get_Ichimoku(
 def update_portfolio(stock):
     global portfolio
     print(f"checking {stock}")
-    ran = 4
+    ran = 2
+    candle_per_day = 7
     month_ticker_data = dri.get_ticker_data(
-        ticker=stock, range=str(ran) + "d", interval="5m"
+        ticker=stock, range=str(ran) + "mo", interval="1h"
     )
+    print(len(month_ticker_data))
+    dates =[pd.to_datetime(date).strftime("%Y-%m-%d") for date in month_ticker_data.index.values.tolist()]
+    print(len(set(dates)))
     month_ticker_data = get_Ichimoku(month_ticker_data, 9, 26, 52, 26)
-    month_ticker_data = month_ticker_data.iloc[150:225]
+    month_ticker_data = month_ticker_data.iloc[84:]
     # print(month_ticker_data)
     # exit()
     # month_ticker_data.to_csv('TVS_ITCHIMOKU.csv')
@@ -80,7 +84,7 @@ def update_portfolio(stock):
     #     print(f"{stock} has less data {leng} out of {dayrange}, hence not proceeding further")
     #     return False
     list_of_td = [
-        month_ticker_data.iloc[i : i + 75] for i in range(0, len(month_ticker_data), 75)
+        month_ticker_data.iloc[i : i + candle_per_day] for i in range(0, len(month_ticker_data), candle_per_day)
     ]
     # print(leng,len(list_of_td))
     # exit()
@@ -209,11 +213,11 @@ def update_portfolio(stock):
             )
 
 
-stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
-stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
-for stock in stocks_of_sector["symbol"]:
-    update_portfolio(stock)
-# update_portfolio("JSWSTEEL.NS")
+# stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
+# stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
+# for stock in stocks_of_sector["symbol"]:
+#     update_portfolio(stock)
+update_portfolio("JSWSTEEL.NS")
 portfolio = portfolio.set_index("stock")
 print("*******PORTFOLIO*********")
 print(portfolio)
