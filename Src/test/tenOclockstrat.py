@@ -65,12 +65,12 @@ def get_Ichimoku(
 def update_portfolio(stock):
     global portfolio
     print(f"checking {stock}")
-    ran = 3
+    ran = 4
     month_ticker_data = dri.get_ticker_data(
         ticker=stock, range=str(ran) + "d", interval="5m"
     )
     month_ticker_data = get_Ichimoku(month_ticker_data, 9, 26, 52, 26)
-    month_ticker_data = month_ticker_data.iloc[75:150]
+    month_ticker_data = month_ticker_data.iloc[150:225]
     # print(month_ticker_data)
     # exit()
     # month_ticker_data.to_csv('TVS_ITCHIMOKU.csv')
@@ -91,23 +91,54 @@ def update_portfolio(stock):
         # sell_value = ticker_data[
         #     ticker_data["Close"] < ticker_data.head(9)["Low"].min()
         # ].head(1)
+        ticker_data.to_csv("tik.csv")
         buy_condition = (
-            (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
+            # (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
+            (
+                (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
+                & (
+                    ticker_data["tenkan_sen"].shift(1)
+                    < ticker_data["kijun_sen"].shift(1)
+                )
+            )
             & (
                 (ticker_data["Close"] > ticker_data["senkou_span_a"])
                 & (ticker_data["Close"] > ticker_data["senkou_span_b"])
             )
-            & (ticker_data["chikou_span"] > ticker_data["Close"])
+            # & (
+            #     (ticker_data["tenkan_sen"] > ticker_data["senkou_span_a"])
+            #     & (ticker_data["tenkan_sen"] > ticker_data["senkou_span_b"])
+            # )
+            # & (
+            #     (ticker_data["kijun_sen"] > ticker_data["senkou_span_a"])
+            #     & (ticker_data["kijun_sen"] > ticker_data["senkou_span_b"])
+            # )
+            & (ticker_data["chikou_span"].shift(-26) > ticker_data["Close"].shift(-26))
         )
 
         buy_data = ticker_data[np.where(buy_condition, True, False)]
         sell_condition = (
-            (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
-            & (
-                (ticker_data["Close"] < ticker_data["senkou_span_a"])
-                & (ticker_data["Close"] < ticker_data["senkou_span_b"])
+            # (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
+            (
+                (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
+                & (
+                    ticker_data["tenkan_sen"].shift(1)
+                    > ticker_data["kijun_sen"].shift(1)
+                )
             )
-            & (ticker_data["chikou_span"] < ticker_data["Close"])
+            & (
+                (ticker_data["tenkan_sen"] < ticker_data["senkou_span_a"])
+                & (ticker_data["tenkan_sen"] < ticker_data["senkou_span_b"])
+            )
+            # & (
+            #     (ticker_data["kijun_sen"] < ticker_data["senkou_span_a"])
+            #     & (ticker_data["kijun_sen"] < ticker_data["senkou_span_b"])
+            # )
+            # & (
+            #     (ticker_data["Close"] < ticker_data["senkou_span_a"])
+            #     & (ticker_data["Close"] < ticker_data["senkou_span_b"])
+            # )
+            & (ticker_data["chikou_span"].shift(-26) < ticker_data["Close"].shift(-26))
         )
 
         sell_data = ticker_data[np.where(sell_condition, True, False)]
@@ -182,7 +213,7 @@ stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
 stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
 for stock in stocks_of_sector["symbol"]:
     update_portfolio(stock)
-# update_portfolio("BAJFINANCE.NS")
+# update_portfolio("JSWSTEEL.NS")
 portfolio = portfolio.set_index("stock")
 print("*******PORTFOLIO*********")
 print(portfolio)
