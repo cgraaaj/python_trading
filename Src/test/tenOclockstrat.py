@@ -66,7 +66,7 @@ def update_portfolio(stock):
     global portfolio
     print(f"checking {stock}")
     ran = 2
-    candle_per_day = 273
+    candle_per_day = 280
     month_ticker_data = dri.get_ticker_data(
         ticker=stock, range=str(ran) + "mo", interval="1h"
     )
@@ -77,7 +77,7 @@ def update_portfolio(stock):
     ]
     # print(len(set(dates)))
     month_ticker_data = get_Ichimoku(month_ticker_data, 9, 26, 52, 26)
-    month_ticker_data = month_ticker_data
+    # month_ticker_data = month_ticker_data[84:]
     # print(month_ticker_data)
     # exit()
     # month_ticker_data.to_csv('TVS_ITCHIMOKU.csv')
@@ -90,34 +90,47 @@ def update_portfolio(stock):
         month_ticker_data.iloc[i : i + candle_per_day]
         for i in range(0, len(month_ticker_data), candle_per_day)
     ]
-    # print(leng,len(list_of_td))
+    print(len(month_ticker_data),len(list_of_td))
+    print(type(month_ticker_data),type(list_of_td))
     # exit()
     for ticker_data in list_of_td:
-        ticker_data.to_csv("tik.csv")
+        # ticker_data.to_csv("tik.csv")
+        # print(ticker_data)
         buy_condition = (
             # (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
             (
                 (
-                    ticker_data["tenkan_sen"].shift(1)
-                    <= ticker_data["kijun_sen"].shift(1)
+                    (
+                        ticker_data["tenkan_sen"].shift(1)
+                        <= ticker_data["kijun_sen"].shift(1)
+                    )
+                    & (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
                 )
-                & (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
+                & (
+                    (ticker_data["tenkan_sen"] > ticker_data["senkou_span_a"])
+                    & (ticker_data["tenkan_sen"] > ticker_data["senkou_span_b"])
+                )
+                & (
+                    (ticker_data["kijun_sen"] > ticker_data["senkou_span_a"])
+                    & (ticker_data["kijun_sen"] > ticker_data["senkou_span_b"])
+                )
             )
             # | (
-            #     (
-            #         (ticker_data["Close"] > ticker_data["senkou_span_a"])
-            #         & (ticker_data["Close"] > ticker_data["senkou_span_b"])
-            #     )
+            #     (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
             #     & (
             #         (ticker_data["tenkan_sen"] > ticker_data["senkou_span_a"])
             #         & (ticker_data["tenkan_sen"] > ticker_data["senkou_span_b"])
             #     )
+            #     & (
+            #         (ticker_data["kijun_sen"] > ticker_data["senkou_span_a"])
+            #         & (ticker_data["kijun_sen"] > ticker_data["senkou_span_b"])
+            #     )
             # )
             & (
-                (ticker_data["kijun_sen"] > ticker_data["senkou_span_a"])
-                & (ticker_data["kijun_sen"] > ticker_data["senkou_span_b"])
+                (ticker_data["Close"] > ticker_data["senkou_span_a"])
+                & (ticker_data["Close"] > ticker_data["senkou_span_b"])
             )
-            & (ticker_data["chikou_span"].shift(-26) > ticker_data["Close"].shift(-26))
+            & (ticker_data["chikou_span"] > ticker_data["Close"].shift(26))
         )
 
         buy_data = ticker_data[np.where(buy_condition, True, False)]
@@ -125,13 +138,24 @@ def update_portfolio(stock):
             # (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
             (
                 (
-                    ticker_data["tenkan_sen"].shift(1)
-                    >= ticker_data["kijun_sen"].shift(1)
+                    (
+                        ticker_data["tenkan_sen"].shift(1)
+                        >= ticker_data["kijun_sen"].shift(1)
+                    )
+                    & (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
                 )
-                & (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
+                & (
+                    (ticker_data["tenkan_sen"] < ticker_data["senkou_span_a"])
+                    & (ticker_data["tenkan_sen"] < ticker_data["senkou_span_b"])
+                )
+                & (
+                    (ticker_data["kijun_sen"] < ticker_data["senkou_span_a"])
+                    & (ticker_data["kijun_sen"] < ticker_data["senkou_span_b"])
+                )
             )
             # | (
-            #     (
+            #     (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
+            #     & (
             #         (ticker_data["tenkan_sen"] < ticker_data["senkou_span_a"])
             #         & (ticker_data["tenkan_sen"] < ticker_data["senkou_span_b"])
             #     )
@@ -144,7 +168,7 @@ def update_portfolio(stock):
                 (ticker_data["Close"] < ticker_data["senkou_span_a"])
                 & (ticker_data["Close"] < ticker_data["senkou_span_b"])
             )
-            & (ticker_data["chikou_span"].shift(-26) < ticker_data["Close"].shift(-26))
+            & (ticker_data["chikou_span"] < ticker_data["Close"].shift(26))
         )
 
         sell_data = ticker_data[np.where(sell_condition, True, False)]
@@ -155,19 +179,19 @@ def update_portfolio(stock):
                 if (
                     buy_value <= 5000
                     and buy_value >= 200
-                    and t
-                    < np.datetime64(
-                        "{} 15:00:00".format(pd.to_datetime(t).strftime("%Y-%m-%d"))
-                    )
+                    # and t
+                    # < np.datetime64(
+                    #     "{} 15:00:00".format(pd.to_datetime(t).strftime("%Y-%m-%d"))
+                    # )
                 ):
                     df = {
                         "stock": stock,
                         "trade": "buy",
                         "time": t,
                         "boughtAt": buy_value,
-                        "soldAt": ticker_data.iloc[-7]["Close"],
+                        "soldAt": ticker_data.iloc[-1]["Close"],
                         "quantity": math.floor(5000 / buy_value),
-                        "P/L": (ticker_data.iloc[-7]["Close"] - buy_value)
+                        "P/L": (ticker_data.iloc[-1]["Close"] - buy_value)
                         * math.floor(5000 / buy_value),
                         "percent": (
                             (ticker_data.iloc[-7]["Close"] - buy_value) / buy_value
@@ -187,19 +211,19 @@ def update_portfolio(stock):
                 if (
                     sell_value <= 5000
                     and sell_value >= 200
-                    and t
-                    < np.datetime64(
-                        "{} 15:00:00".format(pd.to_datetime(t).strftime("%Y-%m-%d"))
-                    )
+                    # and t
+                    # < np.datetime64(
+                    #     "{} 15:00:00".format(pd.to_datetime(t).strftime("%Y-%m-%d"))
+                    # )
                 ):
                     df = {
                         "stock": stock,
                         "trade": "sell",
                         "time": t,
-                        "boughtAt": ticker_data.iloc[-7]["Close"],
+                        "boughtAt": ticker_data.iloc[-1]["Close"],
                         "soldAt": sell_value,
                         "quantity": math.floor(5000 / sell_value),
-                        "P/L": (sell_value - ticker_data.iloc[-7]["Close"])
+                        "P/L": (sell_value - ticker_data.iloc[-1]["Close"])
                         * math.floor(5000 / sell_value),
                         "percent": (
                             (sell_value - ticker_data.iloc[-7]["Close"])
@@ -226,6 +250,9 @@ for stock in stocks_of_sector["symbol"]:
 # update_portfolio("JSWSTEEL.NS")
 portfolio = portfolio.set_index("stock")
 print("*******PORTFOLIO*********")
-print(portfolio[np.where(portfolio["time"] > np.datetime64("2021-04-01 15:00:00"),True,False)])
+portfolio = portfolio[
+    np.where(portfolio["time"] > np.datetime64("2021-04-23 15:00:00"), True, False)
+]
+print(portfolio)
 portfolio.to_csv("itchi.csv")
 print("today's outcome:{}".format(portfolio["P/L"].sum()))
