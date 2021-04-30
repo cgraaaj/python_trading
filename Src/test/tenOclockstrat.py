@@ -66,18 +66,12 @@ def update_portfolio(stock):
     global portfolio
     print(f"checking {stock}")
     ran = 2
-    candle_per_day = 280
+    # candle = 75+26
     month_ticker_data = dri.get_ticker_data(
         ticker=stock, range=str(ran) + "mo", interval="1h"
     )
-    # print(len(month_ticker_data))
-    dates = [
-        pd.to_datetime(date).strftime("%Y-%m-%d")
-        for date in month_ticker_data.index.values.tolist()
-    ]
-    # print(len(set(dates)))
     month_ticker_data = get_Ichimoku(month_ticker_data, 9, 26, 52, 26)
-    # month_ticker_data = month_ticker_data[84:]
+    month_ticker_data = month_ticker_data.iloc[84:]
     # print(month_ticker_data)
     # exit()
     # month_ticker_data.to_csv('TVS_ITCHIMOKU.csv')
@@ -87,15 +81,18 @@ def update_portfolio(stock):
     #     print(f"{stock} has less data {leng} out of {dayrange}, hence not proceeding further")
     #     return False
     list_of_td = [
-        month_ticker_data.iloc[i : i + candle_per_day]
-        for i in range(0, len(month_ticker_data), candle_per_day)
+        month_ticker_data.iloc[i : i + len(month_ticker_data)] for i in range(0, len(month_ticker_data), len(month_ticker_data))
     ]
-    print(len(month_ticker_data),len(list_of_td))
-    print(type(month_ticker_data),type(list_of_td))
+    # print(leng,len(list_of_td))
     # exit()
     for ticker_data in list_of_td:
+        # buy_value = ticker_data[
+        #     ticker_data["Close"] > ticker_data.head(9)["High"].max()
+        # ].head(1)
+        # sell_value = ticker_data[
+        #     ticker_data["Close"] < ticker_data.head(9)["Low"].min()
+        # ].head(1)
         # ticker_data.to_csv("tik.csv")
-        # print(ticker_data)
         buy_condition = (
             # (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
             (
@@ -189,9 +186,9 @@ def update_portfolio(stock):
                         "trade": "buy",
                         "time": t,
                         "boughtAt": buy_value,
-                        "soldAt": ticker_data.iloc[-1]["Close"],
+                        "soldAt": ticker_data.iloc[-7]["Close"],
                         "quantity": math.floor(5000 / buy_value),
-                        "P/L": (ticker_data.iloc[-1]["Close"] - buy_value)
+                        "P/L": (ticker_data.iloc[-7]["Close"] - buy_value)
                         * math.floor(5000 / buy_value),
                         "percent": (
                             (ticker_data.iloc[-7]["Close"] - buy_value) / buy_value
@@ -220,10 +217,10 @@ def update_portfolio(stock):
                         "stock": stock,
                         "trade": "sell",
                         "time": t,
-                        "boughtAt": ticker_data.iloc[-1]["Close"],
+                        "boughtAt": ticker_data.iloc[-7]["Close"],
                         "soldAt": sell_value,
                         "quantity": math.floor(5000 / sell_value),
-                        "P/L": (sell_value - ticker_data.iloc[-1]["Close"])
+                        "P/L": (sell_value - ticker_data.iloc[-7]["Close"])
                         * math.floor(5000 / sell_value),
                         "percent": (
                             (sell_value - ticker_data.iloc[-7]["Close"])
@@ -250,9 +247,7 @@ for stock in stocks_of_sector["symbol"]:
 # update_portfolio("JSWSTEEL.NS")
 portfolio = portfolio.set_index("stock")
 print("*******PORTFOLIO*********")
-portfolio = portfolio[
-    np.where(portfolio["time"] > np.datetime64("2021-04-23 15:00:00"), True, False)
-]
+portfolio = portfolio[np.where(portfolio["time"] > np.datetime64("2021-04-23 15:00:00"),True,False)]
 print(portfolio)
 portfolio.to_csv("itchi.csv")
 print("today's outcome:{}".format(portfolio["P/L"].sum()))
