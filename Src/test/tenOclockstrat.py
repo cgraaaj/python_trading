@@ -13,6 +13,7 @@ from nsetools.yahooFinance import YahooFinance as yf
 from nsetools.nse import Nse
 from driver import Driver
 import math
+import indicator.indicators as indi
 
 nse = Nse()
 stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
@@ -22,7 +23,22 @@ dflist = []
 dict = {}
 dri = Driver()
 portfolio = pd.DataFrame(
-    columns=["stock", "trade", "boughtAt", "soldAt", "quantity", "P/L"]
+    columns=[
+        "stock",
+        "trade",
+        "boughtAt",
+        "buy_time",
+        "soldAt",
+        "sell_time",
+        "quantity",
+        "P/L",
+        "percent",
+        "t",
+        "k",
+        "c",
+        "sa",
+        "sb",
+    ]
 )
 
 # Ichimoku
@@ -66,13 +82,16 @@ def update_portfolio(stock):
     global portfolio
     print(f"checking {stock}")
     ran = 2
-    # candle = 75+26
     month_ticker_data = dri.get_ticker_data(
         ticker=stock, range=str(ran) + "mo", interval="1h"
     )
     month_ticker_data = get_Ichimoku(month_ticker_data, 9, 26, 52, 26)
-    month_ticker_data = month_ticker_data.iloc[84:]
+    # SuperTrend
+    # month_ticker_data = indi.SuperTrend(month_ticker_data,7,2)
     # print(month_ticker_data)
+    # exit()
+    month_ticker_data = month_ticker_data.iloc[84:253]
+    # print((month_ticker_data))
     # exit()
     # month_ticker_data.to_csv('TVS_ITCHIMOKU.csv')
     # exit()
@@ -80,10 +99,6 @@ def update_portfolio(stock):
     # if(leng<dayrange):
     #     print(f"{stock} has less data {leng} out of {dayrange}, hence not proceeding further")
     #     return False
-    list_of_td = [
-        month_ticker_data.iloc[i : i + len(month_ticker_data)]
-        for i in range(0, len(month_ticker_data), len(month_ticker_data))
-    ]
     # print(len(month_ticker_data),len(list_of_td))
     # print(type(month_ticker_data),type(list_of_td))
     # exit()
@@ -132,7 +147,7 @@ def update_portfolio(stock):
         & (ticker_data["chikou_span"] > ticker_data["Close"].shift(26))
     )
 
-    buy_data = ticker_data[np.where(buy_condition, True, False)]
+    buy_data = ticker_data[np.where(buy_condition, True, False)].head(1)
     sell_condition = (
         # (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
         (
@@ -170,7 +185,7 @@ def update_portfolio(stock):
         & (ticker_data["chikou_span"] < ticker_data["Close"].shift(26))
     )
 
-    sell_data = ticker_data[np.where(sell_condition, True, False)]
+    sell_data = ticker_data[np.where(sell_condition, True, False)].head(1)
     if not buy_data.empty:
         for index, row in buy_data.iterrows():
             t = index
@@ -188,7 +203,7 @@ def update_portfolio(stock):
                     "trade": "buy",
                     "buy_time": t,
                     "boughtAt": buy_value,
-                    "sell_time":pd.NaT,
+                    "sell_time": pd.NaT,
                     "soldAt": 0,
                     "quantity": math.floor(5000 / buy_value),
                     "P/L": 0,
@@ -218,7 +233,7 @@ def update_portfolio(stock):
                     "trade": "sell",
                     "sell_time": t,
                     "soldAt": sell_value,
-                    "buy_time":pd.NaT,
+                    "buy_time": pd.NaT,
                     "boughtAt": 0,
                     "quantity": math.floor(5000 / sell_value),
                     "P/L": 0,
@@ -237,51 +252,71 @@ def update_portfolio(stock):
         )
 
 
-stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
+# sector = "FO Stocks"
+sector = "Nifty 50"
+stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector=sector))
 stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
 for stock in stocks_of_sector["symbol"]:
     update_portfolio(stock)
-# update_portfolio("SUNTV.NS")
+# update_portfolio("CONCOR.NS")
+if not portfolio.empty:
+    for index, row in portfolio.iterrows():
+        if "buy" in row["trade"]:
+            exit_data = row["monthData"].loc[row["buy_time"] :]
+            # itchi cloud exit
+            exit_sell_condition = (
+                exit_data["tenkan_sen"].shift(1) >= exit_data["kijun_sen"].shift(1)
+            ) & (exit_data["tenkan_sen"] < exit_data["kijun_sen"])
+            # supertrend exit
+            # exit_sell_condition = (
+            #     exit_data["Close"].shift(1) >= exit_data["ST_7_2"].shift(1)
+            # ) & (exit_data["Close"] < exit_data["ST_7_2"])
+            exit_sell_data = exit_data[np.where(exit_sell_condition, True, False)]
+            if not exit_sell_data.empty:
+                portfolio.at[index, "soldAt"] = exit_sell_data.iloc[0]["Close"]
+                portfolio.at[index, "sell_time"] = exit_sell_data.index.values[0]
+                portfolio.at[index, "P/L"] = (
+                    exit_sell_data.iloc[0]["Close"] - row["boughtAt"]
+                ) * row["quantity"]
+                portfolio.at[index, "percent"] = (
+                    (exit_sell_data.iloc[0]["Close"] - row["boughtAt"])
+                    / row["boughtAt"]
+                ) * 100
+        else:
+            exit_data = row["monthData"].loc[row["sell_time"] :]
+            # itchi cloud exit
+            exit_buy_condition = (
+                exit_data["tenkan_sen"].shift(1) <= exit_data["kijun_sen"].shift(1)
+            ) & (exit_data["tenkan_sen"] > exit_data["kijun_sen"])
+            # supertrend exit
+            # exit_buy_condition = (
+            #     exit_data["Close"].shift(1) <= exit_data["ST_7_2"].shift(1)
+            # ) & (exit_data["Close"] > exit_data["ST_7_2"])
+            exit_buy_data = exit_data[np.where(exit_buy_condition, True, False)]
+            if not exit_buy_data.empty:
+                portfolio.at[index, "boughtAt"] = exit_buy_data.iloc[0]["Close"]
+                portfolio.at[index, "buy_time"] = exit_buy_data.index.values[0]
+                portfolio.at[index, "P/L"] = (
+                    row["soldAt"] - exit_buy_data.iloc[0]["Close"]
+                ) * row["quantity"]
+                portfolio.at[index, "percent"] = (
+                    (row["soldAt"] - exit_buy_data.iloc[0]["Close"])
+                    / exit_buy_data.iloc[0]["Close"]
+                ) * 100
 
-for index, row in portfolio.iterrows():
-    if "buy" in row["trade"]:
-        exit_data = row["monthData"].loc[row["buy_time"] :]
-        exit_sell_condition = (
-            exit_data["tenkan_sen"].shift(1) >= exit_data["kijun_sen"].shift(1)
-        ) & (exit_data["tenkan_sen"] < exit_data["kijun_sen"])
-        exit_sell_data = exit_data[np.where(exit_sell_condition, True, False)]
-        if not exit_sell_data.empty:
-            portfolio.at[index, "soldAt"] = exit_sell_data.iloc[0]["Close"]
-            portfolio.at[index, "sell_time"] = exit_sell_data.index.values[0]
-            portfolio.at[index, "P/L"] = (
-                exit_sell_data.iloc[0]["Close"] - row["boughtAt"]
-            ) * row["quantity"]
-            portfolio.at[index, "percent"] = (
-                (exit_sell_data.iloc[0]["Close"] - row["boughtAt"]) / row["boughtAt"]
-            ) * 100
-    else:
-        exit_data = row["monthData"].loc[row["sell_time"] :]
-        exit_buy_condition = (
-            exit_data["tenkan_sen"].shift(1) <= exit_data["kijun_sen"].shift(1)
-        ) & (exit_data["tenkan_sen"] > exit_data["kijun_sen"])
-        exit_buy_data = exit_data[np.where(exit_buy_condition, True, False)]
-        if not exit_buy_data.empty:
-            portfolio.at[index, "boughtAt"] = exit_buy_data.iloc[0]["Close"]
-            portfolio.at[index, "buy_time"] = exit_buy_data.index.values[0]
-            portfolio.at[index, "P/L"] = (
-                row["soldAt"] - exit_buy_data.iloc[0]["Close"]
-            ) * row["quantity"]
-            portfolio.at[index, "percent"] = (
-                (row["soldAt"] - exit_buy_data.iloc[0]["Close"])
-                / exit_buy_data.iloc[0]["Close"]
-            ) * 100
 
 portfolio = portfolio.set_index("stock")
-portfolio.drop(["monthData"], axis=1, inplace=True)
-print("*******PORTFOLIO*********")
+if not portfolio.empty:
+    portfolio.drop(["monthData", "t", "k", "c", "sa", "sb"], axis=1, inplace=True)
 # portfolio = portfolio[np.where(portfolio["buy_time"] > np.datetime64("2021-04-23 15:00:00"),True,False)]
-portfolio = portfolio[portfolio["sell_time"].isnull()]
-# portfolio = portfolio[portfolio["sell_time"].notnull()]
+print("***************SQUARED OFF PORTFOLIO*****************")
+portfolio = portfolio[
+    portfolio["sell_time"].notnull() | portfolio["buy_time"].notnull()
+]
 print(portfolio)
-portfolio.to_csv("itchi.csv")
-print("today's outcome:{}".format(portfolio["P/L"].sum()))
+portfolio.to_csv(f"closed_{sector}_itchi.csv")
+print("Outcome:{}".format(portfolio["P/L"].sum()))
+print("*******ON HOLD PORTFOLIO*********")
+portfolio = portfolio[portfolio["sell_time"].isnull() | portfolio["buy_time"].isnull()]
+print(portfolio)
+portfolio.to_csv(f"onhold_{sector}_itchi.csv")
