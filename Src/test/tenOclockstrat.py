@@ -8,7 +8,7 @@ from dateutil import tz
 import pandas as pd
 import numpy as np
 
-sys.path.insert(1, "/home/pudge/Desktop/PROJECTS/Python/trading/python_trading/Src")
+sys.path.insert(1, "/home/pudge/Trading/python_trading/Src")
 from nsetools.yahooFinance import YahooFinance as yf
 from nsetools.nse import Nse
 from driver import Driver
@@ -65,9 +65,9 @@ def get_Ichimoku(
 def update_portfolio(stock):
     global portfolio
     print(f"checking {stock}")
-    ran = 4
+    rnge = 4
     month_ticker_data = dri.get_ticker_data(
-        ticker=stock, range=str(ran) + "d", interval="5m"
+        ticker=stock, range=str(rnge) + "d", interval="5m"
     )
     month_ticker_data = get_Ichimoku(month_ticker_data, 9, 26, 52, 26)
     month_ticker_data = month_ticker_data.iloc[150:225]
