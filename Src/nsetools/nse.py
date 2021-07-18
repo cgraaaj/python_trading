@@ -30,6 +30,7 @@ import zipfile
 import io
 import pandas as pd
 import os
+import requests
 from dateutil import parser
 from nsetools.bases import AbstractBaseExchange
 from nsetools.utils import byte_adaptor
@@ -83,6 +84,13 @@ class Nse(AbstractBaseExchange):
         self.get_most_active__volume_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/most_active/allTopVolume1.json"
         self.get_most_active__value_url = "https://www1.nseindia.com/live_market/dynaContent/live_analysis/most_active/allTopValue1.json"
         self.get_sector_url = "https://www1.nseindia.com/live_market/dynaContent/live_watch/stock_watch/{}StockWatch.json"
+        self.get_option_chain_indices = (
+            "https://www.nseindia.com/api/option-chain-indices?symbol={}"
+        )
+        self.get_option_chain_equities = (
+            "https://www.nseindia.com/api/option-chain-equities?symbol={}"
+        )
+        self.baseurl = "https://www.nseindia.com/"
 
     def get_fno_lot_sizes(self, cached=True, as_json=False):
         """
@@ -293,7 +301,9 @@ class Nse(AbstractBaseExchange):
 
     def get_stocks_of_sector(self, as_json=False, sector="Nifty 50"):
 
-        sectorkw = pd.read_csv("{}/sectorKeywords.csv".format(self.LOCATE_PY_DIRECTORY_PATH))
+        sectorkw = pd.read_csv(
+            "{}/sectorKeywords.csv".format(self.LOCATE_PY_DIRECTORY_PATH)
+        )
         sectorkw.set_index("Sector", inplace=True)
         url = self.get_sector_url.format(sectorkw.loc[sector].iloc[0])
         req = Request(url, None, self.headers)
@@ -305,6 +315,36 @@ class Nse(AbstractBaseExchange):
         resp_dict = json.load(resp)
         resp_list = [self.clean_server_response(item) for item in resp_dict["data"]]
         return self.render_response(resp_list, as_json)
+
+    def get_index_option_chain(self, index, as_json=False):
+
+        url = self.get_option_chain_indices.format(index)
+        headers = {
+            "user-agent": "Chrome/80.0.3987.149 Safari/537.36",
+            "accept-language": "en,gu;q=0.9,hi;q=0.8",
+            "accept-encoding": "gzip, deflate, br",
+        }
+        session = requests.Session()
+        request = session.get(self.baseurl, headers=headers, timeout=5)
+        cookies = dict(request.cookies)
+        response = session.get(url, headers=headers, timeout=5, cookies=cookies)
+        # response =  requests.get(url, headers=self.headers)
+        return response.json()
+
+    def get_equity_option_chain(self, equity):
+        
+        url = self.get_option_chain_equities.format(equity)
+        headers = {
+            "user-agent": "Chrome/80.0.3987.149 Safari/537.36",
+            "accept-language": "en,gu;q=0.9,hi;q=0.8",
+            "accept-encoding": "gzip, deflate, br",
+        }
+        session = requests.Session()
+        request = session.get(self.baseurl, headers=headers, timeout=5)
+        cookies = dict(request.cookies)
+        response = session.get(url, headers=headers, timeout=5, cookies=cookies)
+        # response =  requests.get(url, headers=self.headers)
+        return response.json()
 
     def get_index_list(self, as_json=False):
         """get list of indices and codes

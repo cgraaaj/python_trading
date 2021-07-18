@@ -5,7 +5,7 @@ import requests
 
 
 class YahooFinance:
-    def __init__(self, ticker, result_range='1mo', start=None, end=None, interval='15m', dropna=True):
+    def __init__(self, ticker, result_range=None, start=None, end=None, interval='15m', dropna=True):
         """
         Return the stock data of the specified range and interval
 
@@ -30,7 +30,9 @@ class YahooFinance:
 
         # sending get request and saving the response as response object
         url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
-        r = requests.get(url=url, params=params)
+        r = requests.get(url=url, params=params, headers={
+            'User-Agent': 'python3client',
+        })
         data = r.json()
         # Getting data from json
         error = data['chart']['error']

@@ -169,7 +169,7 @@ if trade == "equity":
 elif trade == "bitcoin":
     dri.run_strategy(sec=marketcap_BTCs_INR.split(","), strategy=dri.days_high_low)
 else:
-    print("Give some arguments like equity or bitcoin")
+    print("Give arguments like equity or bitcoin")
 
 # time.sleep(60 * 4)
 time.sleep(10)
