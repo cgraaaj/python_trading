@@ -6,11 +6,11 @@ import multiprocessing
 
 
 class Tele:
-    def __init__(self, message):
+    def __init__(self, message,chat_ids_fname):
         self.message = message
         LOCATE_PY_DIRECTORY_PATH = os.path.abspath(os.path.dirname(__file__))
         load_dotenv("{}/.env".format(LOCATE_PY_DIRECTORY_PATH))
-        file1 = open("{}/data/chat_ids.txt".format(LOCATE_PY_DIRECTORY_PATH), "r")
+        file1 = open("{}/data/{}.txt".format(LOCATE_PY_DIRECTORY_PATH,chat_ids_fname), "r")
         self.bot = telegram.Bot(token=os.getenv("STOCK_BOT_TOKEN"))
         self.chat_ids = file1.readlines()
 

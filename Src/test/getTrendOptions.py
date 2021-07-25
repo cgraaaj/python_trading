@@ -34,6 +34,7 @@ res = multiprocessing.Manager().list()
 total = []
 volBased = []
 optionStocks = {"Bullish": [], "Bearish": []}
+triangel_stocks = []
 
 
 def get_uptrend(stock):
@@ -128,6 +129,30 @@ def analyze_stock(data, stock):
     # print(ce_data,pe_data)
 
 
+def get_triangle(stock):
+    rnge = 14
+    ticker_data = dri.get_ticker_data(
+        ticker=stock, range=str(rnge) + "d", interval="1d"
+    )
+    ticker_data_body = ticker_data.head(3)
+    body = {
+        "head": max(
+            ticker_data_body["Open"].to_list() + ticker_data_body["Close"].to_list()
+        ),
+        "tail": min(
+            ticker_data_body["Open"].to_list() + ticker_data_body["Close"].to_list()
+        ),
+    }
+    print(body)
+    ticker_data["isTriange"] = (
+        (ticker_data["Open"] <= body["head"]) & (ticker_data["Open"] >= body["tail"])
+    ) & (
+        (ticker_data["Close"] <= body["head"]) & (ticker_data["Close"] >= body["tail"])
+    )
+    if ticker_data["isTriange"].values.sum() >= 12:
+        res.append(stock)
+
+
 sectors = pd.read_csv(
     "/home/pudge/Trading/python_trading/Src/nsetools/sectorKeywords.csv"
 )
@@ -142,26 +167,25 @@ for sec in sectors:
     for stock in stocks_of_sector["symbol"]:
         # get_uptrend(stock)
         # get_flat(stock)
-        stock = stock.split(".")[0]
-        data = nse.get_equity_option_chain(stock)
-        analyze_stock(data, stock)
-
-# get_flat("HCLTECH.NS")
-# res = list(set(res))
-# print(f"final result {res}")
-optionStocks["Bullish"] = sorted(
-    optionStocks["Bullish"], key=lambda stock: stock["Percent"], reverse=True
-)
-optionStocks["Bearish"] = sorted(
-    optionStocks["Bearish"], key=lambda stock: stock["Percent"], reverse=True
-)
-optionStocks["Bullish"] = [
-    stock for stock in optionStocks["Bullish"] if stock["Percent"] > 60
-]
-bull = pd.DataFrame(optionStocks["Bullish"])
-bull.to_csv("bull.csv")
-optionStocks["Bearish"] = [
-    stock for stock in optionStocks["Bearish"] if stock["Percent"] < 40
-]
-bear = pd.DataFrame(optionStocks["Bearish"])
-bear.to_csv("bear.csv")
+        get_triangle(stock)
+# stock = stock.split(".")[0]
+# data = nse.get_equity_option_chain(stock)
+# analyze_stock(data, stock)
+# get_triangle("PIIND.NS")
+print(res)
+# optionStocks["Bullish"] = sorted(
+#     optionStocks["Bullish"], key=lambda stock: stock["Percent"], reverse=True
+# )
+# optionStocks["Bearish"] = sorted(
+#     optionStocks["Bearish"], key=lambda stock: stock["Percent"], reverse=True
+# )
+# optionStocks["Bullish"] = [
+#     stock for stock in optionStocks["Bullish"] if stock["Percent"] > 60
+# ]
+# bull = pd.DataFrame(optionStocks["Bullish"])
+# bull.to_csv("bull.csv")
+# optionStocks["Bearish"] = [
+#     stock for stock in optionStocks["Bearish"] if stock["Percent"] < 40
+# ]
+# bear = pd.DataFrame(optionStocks["Bearish"])
+# bear.to_csv("bear.csv")

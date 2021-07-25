@@ -7,8 +7,9 @@ import time
 from dateutil import tz
 import pandas as pd
 import numpy as np
+import datetime as dt
 
-sys.path.insert(1, "/home/pi/trading/python_trading/Src")
+sys.path.insert(1, "/home/pudge/Trading/python_trading/Src")
 from nsetools.yahooFinance import YahooFinance as yf
 from nsetools.nse import Nse
 from driver import Driver
@@ -28,14 +29,14 @@ import math
 # )
 # d = {"sad": "asdf", "dad": "asdf"}
 # print(list(d.keys()))
-nse = Nse()
-stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
-stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
-finaldf = pd.DataFrame()
-dflist = []
-dict = {}
+# nse = Nse()
+# stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
+# stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
+# finaldf = pd.DataFrame()
+# dflist = []
+# dict = {}
 
-dri = Driver()
+# dri = Driver()
 
 
 # to get the months's record of all stocks with close price to calculate Efficient frontier
@@ -58,56 +59,5 @@ dri = Driver()
 
 # GET THE DAYS RESULT P/L
 
-portfolio = pd.DataFrame(
-    columns=["stock", "trade", "boughtAt", "soldAt", "quantity", "P/L"]
-)
-dri.run_strategy(sec="FO Stocks", strategy=dri.days_high_low)
-day_high_low = dri.day_high_dict
-stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
-stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
-for stock in stocks_of_sector["symbol"]:
-
-    print(f"checking {stock}")
-    ticker_data = dri.get_ticker_data(ticker=stock, interval="5m")
-    # print(ticker_data.tail(7))
-    # exit()
-    buy_value = ticker_data[ticker_data["Close"] > ticker_data.head(9)["High"].max()].head(1)
-    sell_value = ticker_data[ticker_data["Close"] < ticker_data.head(9)["Low"].min()].head(1)
-    if not buy_value.empty:
-        t = buy_value.index.values[0]
-        buy_value = buy_value.iloc[0]["Close"]
-        if buy_value <= 5000 and t < np.datetime64("2021-04-27 15:00:00"):
-            df = {
-                "stock": stock,
-                "trade": "buy",
-                "time": t,
-                "boughtAt": buy_value,
-                "soldAt": ticker_data.iloc[-7]["Close"],
-                "quantity": math.floor(5000 / buy_value),
-                "P/L": (ticker_data.iloc[-7]["Close"] - buy_value)
-                * math.floor(5000 / buy_value),
-            }
-            portfolio = portfolio.append(df, ignore_index=True)
-    elif not sell_value.empty:
-        t = sell_value.index.values[0]
-        sell_value = sell_value.iloc[0]["Close"]
-        if sell_value <= 5000 and t < np.datetime64("2021-04-27 15:00:00"):
-            df = {
-                "stock": stock,
-                "trade": "sell",
-                "time": t,
-                "boughtAt": ticker_data.iloc[-7]["Close"],
-                "soldAt": sell_value,
-                "quantity": math.floor(5000 / sell_value),
-                "P/L": (sell_value - ticker_data.iloc[-7]["Close"])
-                * math.floor(5000 / sell_value),
-            }
-            portfolio = portfolio.append(df, ignore_index=True)
-    else:
-        print(f"this stock {stock} is in sideways, hence not added to portfolio")
-    portfolio.set_index("stock")
-
-print("*******PORTFOLIO*********")
-print(portfolio)
-# portfolio.to_csv("daysPL.csv")
-print("today's outcome:{}".format(portfolio["P/L"].sum()))
+date = '09-JUL-2021'
+print(datetime.strptime(date, "%d-%b-%Y")<datetime.today() - dt.timedelta(days=14))
