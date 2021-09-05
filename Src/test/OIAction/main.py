@@ -2,9 +2,10 @@ from OIAction import OIAction
 from teleBot import Tele
 
 def main():
-    stock = 'ICICIBANK'
+    stock = 'TATAMOTORS'
     oi_action = OIAction(stock)
     option_chain_data = oi_action.analyze_stock()
+    oi_action.generate_xsls()
     oi_action.generate_df_to_img()
     oi_action.generate_oi_strike_png()
     oi_action.generate_change_in_oi_strike_png()

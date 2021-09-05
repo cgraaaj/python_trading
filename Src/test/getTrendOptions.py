@@ -1,3 +1,4 @@
+from re import T
 import sys
 import json
 from datetime import datetime
@@ -153,6 +154,31 @@ def get_triangle(stock):
         res.append(stock)
 
 
+def get_nearSMA200(stock):
+    rnge = 250
+    ticker_data = dri.get_ticker_data(
+        ticker=stock, range=str(rnge) + "d", interval="1d"
+    )
+    ticker_data["200SMA"] = ticker_data.Close.rolling(200).mean()
+    if (
+        len(
+            ticker_data.tail(2).loc[
+                ticker_data["Close"]
+                >= (ticker_data["200SMA"] - ticker_data["200SMA"] * 0.02)
+            ]
+        )
+        >= 1
+        and len(
+            ticker_data.tail(2).loc[
+                ticker_data["Close"]
+                <= (ticker_data["200SMA"] + ticker_data["200SMA"] * 0.02)
+            ]
+        )
+        >= 1
+    ):
+        res.append(stock)
+
+
 sectors = pd.read_csv(
     "/home/pudge/Trading/python_trading/Src/nsetools/sectorKeywords.csv"
 )
@@ -167,11 +193,12 @@ for sec in sectors:
     for stock in stocks_of_sector["symbol"]:
         # get_uptrend(stock)
         # get_flat(stock)
-        get_triangle(stock)
+        # get_triangle(stock)
+        get_nearSMA200(stock)
 # stock = stock.split(".")[0]
 # data = nse.get_equity_option_chain(stock)
 # analyze_stock(data, stock)
-# get_triangle("PIIND.NS")
+# get_nearSMA200("BANKBARODA.NS")
 print(res)
 # optionStocks["Bullish"] = sorted(
 #     optionStocks["Bullish"], key=lambda stock: stock["Percent"], reverse=True
