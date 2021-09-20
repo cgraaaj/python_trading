@@ -85,7 +85,7 @@ class Uptrend:
             retry += 1
             print(f"checking again {stock} {retry} time")
             print(ticker_data)
-            print(f'data length is {len(set(self.total))}')
+            print(f"data length is {len(set(self.total))}")
             time.sleep(180)
             self.get_uptrend(stock, retry)
 
@@ -117,10 +117,10 @@ class Uptrend:
         print(data)
 
     def send(self, res, volBased):
-        fname ="test_ids"
-        tele = Tele(res,chat_ids_fname=fname)
+        fname = "test_ids"
+        tele = Tele(res, chat_ids_fname=fname)
         tele.send_message(f"Uptrend Stocks...")
-        tele = Tele(volBased,chat_ids_fname=fname)
+        tele = Tele(volBased, chat_ids_fname=fname)
         tele.send_message("Uptrend Stocks with volumes...")
 
     def nifty_stocks(self):
@@ -158,7 +158,7 @@ class Uptrend:
         # print("volume based")
         self.send(result, volumeBased)
 
-    def otherthan_nifty_stocks(self,untracked=True):
+    def otherthan_nifty_stocks(self, untracked=True):
         if untracked:
             all_stocks_pd = pd.read_csv(
                 "/home/pudge/Trading/python_trading/Src/nsetools/allStocks.csv"
@@ -173,10 +173,16 @@ class Uptrend:
             all_stocks = [stock for stock in all_stocks_pd["SYMBOL"]]
             untracked_stocks = set(all_stocks) - self.trackedStocks
             # serialize to a file
-            with open("/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_stocks", "wb") as fp:
+            with open(
+                "/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_stocks",
+                "wb",
+            ) as fp:
                 pickle.dump(untracked_stocks, fp)
         else:
-            with open ('/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_medium_cap_stocks', 'rb') as fp:
+            with open(
+                "/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_medium_cap_stocks",
+                "rb",
+            ) as fp:
                 untracked_stocks = pickle.load(fp)
         print(len(untracked_stocks))
         for stock in [stock + ".NS" for stock in untracked_stocks]:

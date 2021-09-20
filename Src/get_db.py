@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 
+
 def get_database():
     # Provide the mongodb atlas url to connect python to mongodb using pymongo
     CONNECTION_STRING = "mongodb+srv://velan_mongodb:Raju6713@cluster0.64cqd.mongodb.net/tradeStrategies?retryWrites=true&w=majority"
@@ -8,10 +9,11 @@ def get_database():
     client = MongoClient(CONNECTION_STRING)
 
     # Create the database for our example (we will use the same database throughout the tutorial
-    return client['tradeStrategies']
-    
+    return client["tradeStrategies"]
+
+
 # This is added so that many files can reuse the function get_database()
-if __name__ == "__main__":    
-    
+if __name__ == "__main__":
+
     # Get the database
     db = get_database()

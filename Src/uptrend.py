@@ -14,6 +14,7 @@ sys.path.insert(1, "/home/pudge/Trading/python_trading/Src")
 from nsetools.nse import Nse
 from driver import Driver
 
+
 class Uptrend:
     def __init__(self):
         self.nse = Nse()
@@ -78,7 +79,7 @@ class Uptrend:
             retry += 1
             print(f"checking again {stock} {retry} time")
             print(ticker_data)
-            print(f'data length is {len(set(self.total))}')
+            print(f"data length is {len(set(self.total))}")
             time.sleep(180)
             self.get_uptrend(stock, retry)
 
@@ -107,9 +108,9 @@ class Uptrend:
             volumeBased, key=lambda stock: stock["volume"], reverse=True
         )
         # print("volume based")
-        return {'uptrend':result,'vol_based': volumeBased}
+        return {"uptrend": result, "vol_based": volumeBased}
 
-    def non_nifty_stocks(self,untracked=True):
+    def non_nifty_stocks(self, untracked=True):
         if untracked:
             all_stocks_pd = pd.read_csv(
                 "/home/pudge/Trading/python_trading/Src/nsetools/allStocks.csv"
@@ -124,10 +125,16 @@ class Uptrend:
             all_stocks = [stock for stock in all_stocks_pd["SYMBOL"]]
             untracked_stocks = set(all_stocks) - self.trackedStocks
             # serialize to a file
-            with open("/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_stocks", "wb") as fp:
+            with open(
+                "/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_stocks",
+                "wb",
+            ) as fp:
                 pickle.dump(untracked_stocks, fp)
         else:
-            with open ('/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_medium_cap_stocks', 'rb') as fp:
+            with open(
+                "/home/pudge/Trading/python_trading/Src/utils/pickle_data/untracked_medium_cap_stocks",
+                "rb",
+            ) as fp:
                 untracked_stocks = pickle.load(fp)
         print(len(untracked_stocks))
         for stock in [stock + ".NS" for stock in untracked_stocks]:
@@ -142,20 +149,21 @@ class Uptrend:
             volumeBased, key=lambda stock: stock["volume"], reverse=True
         )
         # print("volume based")
-        return {'uptrend':result,'vol_based': volumeBased}
+        return {"uptrend": result, "vol_based": volumeBased}
+
 
 db = get_database()
 collection = db["uptrend"]
-date = datetime.today().strftime('%d-%m-%Y')
+date = datetime.today().strftime("%d-%m-%Y")
 data = {}
-data['date'] = date
+data["date"] = date
 niftyUptrend = Uptrend()
 nifty = niftyUptrend.nifty_stocks()
 niftyUptrend = Uptrend()
 non_nifty = niftyUptrend.non_nifty_stocks(untracked=False)
-data['nifty'] = nifty
-data['non_nifty'] = non_nifty
-data['last_modified'] = datetime.utcnow()
+data["nifty"] = nifty
+data["non_nifty"] = non_nifty
+data["last_modified"] = datetime.utcnow()
 collection.insert_one(data)
 print(f"End of data for the day -{date}")
 # niftyUptrend.otherthan_nifty_stocks()

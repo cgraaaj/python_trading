@@ -27,7 +27,6 @@ import six
 
 
 class AbstractBaseExchange(six.with_metaclass(ABCMeta, object)):
-
     @abstractmethod
     def get_stock_codes(self):
         """

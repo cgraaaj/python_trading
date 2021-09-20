@@ -59,5 +59,5 @@ import math
 
 # GET THE DAYS RESULT P/L
 
-date = '09-JUL-2021'
-print(datetime.strptime(date, "%d-%b-%Y")<datetime.today() - dt.timedelta(days=14))
+date = "09-JUL-2021"
+print(datetime.strptime(date, "%d-%b-%Y") < datetime.today() - dt.timedelta(days=14))

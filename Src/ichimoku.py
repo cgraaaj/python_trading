@@ -74,19 +74,8 @@ def check_stock(stock):
     ticker_data = ticker_data.iloc[100:]
     print(ticker_data)
     buy_condition = (
-        # (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
-        # (
-        #     (ticker_data["tenkan_sen"] > ticker_data["kijun_sen"])
-        #     & (
-        #         ticker_data["tenkan_sen"].shift(1)
-        #         <= ticker_data["kijun_sen"].shift(1)
-        #     )
-        # )
-        # & 
-        (
-            (ticker_data["Close"] > ticker_data["senkou_span_a"])
-            & (ticker_data["Close"] > ticker_data["senkou_span_b"])
-        )
+        (ticker_data["Close"] > ticker_data["senkou_span_a"])
+        & (ticker_data["Close"] > ticker_data["senkou_span_b"])
         # & (
         #     (ticker_data["tenkan_sen"] > ticker_data["senkou_span_a"])
         #     & (ticker_data["tenkan_sen"] > ticker_data["senkou_span_b"])
@@ -101,45 +90,25 @@ def check_stock(stock):
     buy_data = ticker_data[buy_condition]
     if not buy_data.empty:
         # get the lastest breakout of the day
-        breakout_time = buy_data.index.values[len(buy_data.index.values)-2]
+        breakout_time = buy_data.index.values[len(buy_data.index.values) - 2]
         # check the breakout is happend now(-5 mins)
-        if breakout_time == ticker_data.index.values[len(ticker_data.index.values)-2]:
+        if breakout_time == ticker_data.index.values[len(ticker_data.index.values) - 2]:
             stocks_buy.append(stock)
     sell_condition = (
-        # (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
-        # (
-        #     (ticker_data["tenkan_sen"] < ticker_data["kijun_sen"])
-        #     & (
-        #         ticker_data["tenkan_sen"].shift(1)
-        #         >= ticker_data["kijun_sen"].shift(1)
-        #     )
-        # )
-        # & 
-        # (
-        #     (ticker_data["tenkan_sen"] < ticker_data["senkou_span_a"])
-        #     & (ticker_data["tenkan_sen"] < ticker_data["senkou_span_b"])
-        # )
-        # & (
-        #     (ticker_data["kijun_sen"] < ticker_data["senkou_span_a"])
-        #     & (ticker_data["kijun_sen"] < ticker_data["senkou_span_b"])
-        # )
-        # & 
-        (
-            (ticker_data["Close"] < ticker_data["senkou_span_a"])
-            & (ticker_data["Close"] < ticker_data["senkou_span_b"])
-        )
+        (ticker_data["Close"] < ticker_data["senkou_span_a"])
+        & (ticker_data["Close"] < ticker_data["senkou_span_b"])
         # & (ticker_data["chikou_span"].shift(-26) < ticker_data["Close"].shift(-26))
     )
     # sell_data = ticker_data[np.where(sell_condition, True, False)]
     sell_data = ticker_data[sell_condition]
     if not sell_data.empty:
         # get the lastest breakout of the day
-        breakout_time = sell_data.index.values[len(sell_data.index.values)-2]
+        breakout_time = sell_data.index.values[len(sell_data.index.values) - 2]
         # print(breakout_time)
         # check the breakout is happend now(-5 mins)
-        if breakout_time == ticker_data.index.values[len(ticker_data.index.values)-2]:
+        if breakout_time == ticker_data.index.values[len(ticker_data.index.values) - 2]:
             stocks_sell.append(stock)
-    
+
     # tele = Tele(stocks_buy)
     # tele.send_message(f"Stocksto buy...")
     # tele = Tele(stocks_sell)
@@ -149,7 +118,9 @@ def check_stock(stock):
 def get_stocks(trade):
     if trade == "equity":
         stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector="FO Stocks"))
-        stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
+        stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(
+            lambda x: x + ".NS"
+        )
         for stock in stocks_of_sector["symbol"]:
             check_stock(stock)
     elif trade == "bitcoin":
@@ -160,7 +131,8 @@ def get_stocks(trade):
     else:
         print("Give arguments like equity or bitcoin")
     # check_stocks("ROUTE.NS")
-    return {'buy':stocks_buy,'sell':stocks_sell}
+    return {"buy": stocks_buy, "sell": stocks_sell}
+
 
 # check_stock("ROUTE.NS")
 # print(stocks_buy)

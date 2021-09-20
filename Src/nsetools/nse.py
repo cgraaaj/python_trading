@@ -332,7 +332,7 @@ class Nse(AbstractBaseExchange):
         return response.json()
 
     def get_equity_option_chain(self, equity):
-        
+
         url = self.get_option_chain_equities.format(equity)
         headers = {
             "user-agent": "Chrome/80.0.3987.149 Safari/537.36",

@@ -6,7 +6,7 @@ from nsetools.errors import DateFormatError
 
 
 def get_nearest_business_day(d):
-    """ takes datetime object"""
+    """takes datetime object"""
     if d.isoweekday() is 7 or d.isoweekday() is 6:
         d = d - relativedelta(days=1)
         return get_nearest_business_day(d)
@@ -34,6 +34,7 @@ def get_nearest_business_day(d):
     else:
         return d
 
+
 def is_known_holiday(d):
     """accepts datetime/date object and returns boolean"""
     if type(d) == dt.datetime:
@@ -42,7 +43,7 @@ def is_known_holiday(d):
         raise DateFormatError("only date objects or datetime objects")
     else:
         # fine do nothing
-        pass 
+        pass
 
     # declare the list of holidays here.
     # republic day.
@@ -64,9 +65,10 @@ def is_known_holiday(d):
     else:
         return False
 
+
 def mkdate(d):
     """tries its best to return a valid date. it can accept pharse like today,
-    yesterday, day before yesterday etc. 
+    yesterday, day before yesterday etc.
     """
     # check if the it is a string
     return_date = ""
@@ -88,9 +90,11 @@ def mkdate(d):
     # check if future date.
     return return_date
 
+
 def usable_date(d):
     """accepts fuzzy format and returns most sensible date"""
     return get_nearest_business_day(mkdate(d))
+
 
 def get_date_range(frm, to, skip_dates=[]):
     """accepts fuzzy format date and returns business adjusted date ranges"""
@@ -98,7 +102,9 @@ def get_date_range(frm, to, skip_dates=[]):
     frm = usable_date(frm)
     to = usable_date(to)
     datelist = []
-    for date in rrule.rrule(rrule.DAILY, dtstart=frm, until=to, byweekday=[0, 1, 2, 3, 4]):
+    for date in rrule.rrule(
+        rrule.DAILY, dtstart=frm, until=to, byweekday=[0, 1, 2, 3, 4]
+    ):
         if not is_known_holiday(date):
             datelist.append(date.date())
     return datelist

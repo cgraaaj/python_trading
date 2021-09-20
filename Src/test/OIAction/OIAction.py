@@ -17,11 +17,13 @@ from driver import Driver
 
 
 class OIAction:
-    def __init__(self,stock):
+    def __init__(self, stock):
         self.nse = Nse()
         self.stock = stock
         self.expiry_data = {}
-        self.data_path = f'/home/pudge/Trading/python_trading/Src/test/OIAction/data/{stock}'
+        self.data_path = (
+            f"/home/pudge/Trading/python_trading/Src/test/OIAction/data/{stock}"
+        )
         if not os.path.isdir(self.data_path):
             os.mkdir(self.data_path)
         self.columns = [
@@ -125,52 +127,58 @@ class OIAction:
         self.columns.insert(len(self.df_ce_pe.columns), "Put Trend")
         self.df_ce_pe = self.df_ce_pe[self.columns]
         return self.df_ce_pe
-    
+
     def generate_xsls(self):
-        self.df_ce_pe.to_excel(f'{self.data_path}/{self.stock}.xlsx')
+        self.df_ce_pe.to_excel(f"{self.data_path}/{self.stock}.xlsx")
 
     def generate_df_to_img(self):
         # set fig size
-        fig, ax = plb.subplots(figsize=(20, 15)) 
+        fig, ax = plb.subplots(figsize=(20, 15))
         # no axes
-        ax.xaxis.set_visible(False)  
-        ax.yaxis.set_visible(False)  
+        ax.xaxis.set_visible(False)
+        ax.yaxis.set_visible(False)
         # no frame
-        ax.set_frame_on(False)  
+        ax.set_frame_on(False)
         # plot table
-        tab = table(ax, self.df_ce_pe, loc='upper right')  
+        tab = table(ax, self.df_ce_pe, loc="upper right")
         # set font manually
         tab.auto_set_font_size(False)
-        tab.set_fontsize(8) 
+        tab.set_fontsize(8)
         # save the result
-        plt.savefig(f'{self.data_path}/{self.stock}_df.png')
+        plt.savefig(f"{self.data_path}/{self.stock}_df.png")
 
     def generate_oi_strike_png(self):
-        oi_call = self.df_ce_pe['Call OI'].to_list()
-        oi_put = self.df_ce_pe['Put OI'].to_list()
-        index = self.df_ce_pe['Strike Price'].to_list()
-        df = pd.DataFrame({'Call OI':oi_call,'Put OI':oi_put},index=index)
-        indices = list(df[(df['Call OI'] == 0) & (df['Put OI'] == 0)].index.values)
-        df.drop(indices,inplace=True)
+        oi_call = self.df_ce_pe["Call OI"].to_list()
+        oi_put = self.df_ce_pe["Put OI"].to_list()
+        index = self.df_ce_pe["Strike Price"].to_list()
+        df = pd.DataFrame({"Call OI": oi_call, "Put OI": oi_put}, index=index)
+        indices = list(df[(df["Call OI"] == 0) & (df["Put OI"] == 0)].index.values)
+        df.drop(indices, inplace=True)
         plt.rcParams["figure.figsize"] = [15, 10]
-        df.plot(kind='bar')
+        df.plot(kind="bar")
         plt.xticks(rotation=30, horizontalalignment="center")
-        plt.title(f'{self.stock} OI vs Strike Price')
+        plt.title(f"{self.stock} OI vs Strike Price")
         plt.xlabel("Strike Price")
         plt.ylabel("OI Call/Put")
-        plt.savefig(f'{self.data_path}/{self.stock}_oi_strike.png')
-    
+        plt.savefig(f"{self.data_path}/{self.stock}_oi_strike.png")
+
     def generate_change_in_oi_strike_png(self):
-        oi_call = self.df_ce_pe['Call Change in OI'].to_list()
-        oi_put = self.df_ce_pe['Put Change in OI'].to_list()
-        index = self.df_ce_pe['Strike Price'].to_list()
-        df = pd.DataFrame({'Call Change in OI':oi_call,'Put Change in OI':oi_put},index=index)
-        indices = list(df[(df['Call Change in OI'] == 0) & (df['Call Change in OI'] == 0)].index.values)
-        df.drop(indices,inplace=True)
+        oi_call = self.df_ce_pe["Call Change in OI"].to_list()
+        oi_put = self.df_ce_pe["Put Change in OI"].to_list()
+        index = self.df_ce_pe["Strike Price"].to_list()
+        df = pd.DataFrame(
+            {"Call Change in OI": oi_call, "Put Change in OI": oi_put}, index=index
+        )
+        indices = list(
+            df[
+                (df["Call Change in OI"] == 0) & (df["Call Change in OI"] == 0)
+            ].index.values
+        )
+        df.drop(indices, inplace=True)
         plt.rcParams["figure.figsize"] = [15, 10]
-        df.plot(kind='bar')
+        df.plot(kind="bar")
         plt.xticks(rotation=30, horizontalalignment="center")
-        plt.title(f'{self.stock} Change in OI vs Strike Price')
+        plt.title(f"{self.stock} Change in OI vs Strike Price")
         plt.xlabel("Strike Price")
         plt.ylabel("Change in OI Call/Put")
-        plt.savefig(f'{self.data_path}/{self.stock}_change_in_oi_strike.png')
+        plt.savefig(f"{self.data_path}/{self.stock}_change_in_oi_strike.png")

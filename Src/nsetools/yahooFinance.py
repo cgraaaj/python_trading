@@ -1,11 +1,19 @@
 import pandas as pd
-import time  as _time
+import time as _time
 import numpy as np
 import requests
 
 
 class YahooFinance:
-    def __init__(self, ticker, result_range=None, start=None, end=None, interval='15m', dropna=True):
+    def __init__(
+        self,
+        ticker,
+        result_range=None,
+        start=None,
+        end=None,
+        interval="15m",
+        dropna=True,
+    ):
         """
         Return the stock data of the specified range and interval
 
@@ -20,24 +28,28 @@ class YahooFinance:
         :return:
         """
         if result_range is None:
-            start = int(_time.mktime(_time.strptime(start, '%d-%m-%Y')))
-            end = int(_time.mktime(_time.strptime(end, '%d-%m-%Y')))
+            start = int(_time.mktime(_time.strptime(start, "%d-%m-%Y")))
+            end = int(_time.mktime(_time.strptime(end, "%d-%m-%Y")))
             # defining a params dict for the parameters to be sent to the API
-            params = {'period1': start, 'period2': end, 'interval': interval}
+            params = {"period1": start, "period2": end, "interval": interval}
 
         else:
-            params = {'range': result_range, 'interval': interval}
+            params = {"range": result_range, "interval": interval}
 
         # sending get request and saving the response as response object
         url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
-        r = requests.get(url=url, params=params, headers={
-            'User-Agent': 'python3client',
-        })
+        r = requests.get(
+            url=url,
+            params=params,
+            headers={
+                "User-Agent": "python3client",
+            },
+        )
         data = r.json()
         # Getting data from json
-        error = data['chart']['error']
+        error = data["chart"]["error"]
         if error:
-            raise ValueError(error['description'])
+            raise ValueError(error["description"])
         self._result = self._parsing_json(data)
         if dropna:
             self._result.dropna(inplace=True)
@@ -47,22 +59,31 @@ class YahooFinance:
         return self._result
 
     def _parsing_json(self, data):
-        timestamps = data['chart']['result'][0]['timestamp']
+        timestamps = data["chart"]["result"][0]["timestamp"]
         # Formatting date from epoch to local time
-        timestamps = [_time.strftime('%a, %d %b %Y %H:%M:%S', _time.localtime(x)) for x in timestamps]
-        volumes = data['chart']['result'][0]['indicators']['quote'][0]['volume']
-        opens = data['chart']['result'][0]['indicators']['quote'][0]['open']
+        timestamps = [
+            _time.strftime("%a, %d %b %Y %H:%M:%S", _time.localtime(x))
+            for x in timestamps
+        ]
+        volumes = data["chart"]["result"][0]["indicators"]["quote"][0]["volume"]
+        opens = data["chart"]["result"][0]["indicators"]["quote"][0]["open"]
         opens = self._round_of_list(opens)
-        closes = data['chart']['result'][0]['indicators']['quote'][0]['close']
+        closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
         closes = self._round_of_list(closes)
-        lows = data['chart']['result'][0]['indicators']['quote'][0]['low']
+        lows = data["chart"]["result"][0]["indicators"]["quote"][0]["low"]
         lows = self._round_of_list(lows)
-        highs = data['chart']['result'][0]['indicators']['quote'][0]['high']
+        highs = data["chart"]["result"][0]["indicators"]["quote"][0]["high"]
         highs = self._round_of_list(highs)
-        df_dict = {'Open': opens, 'High': highs, 'Low': lows, 'Close': closes, 'Volume': volumes}
+        df_dict = {
+            "Open": opens,
+            "High": highs,
+            "Low": lows,
+            "Close": closes,
+            "Volume": volumes,
+        }
         df = pd.DataFrame(df_dict, index=timestamps)
         df.index = pd.to_datetime(df.index)
-        df.rename_axis(index='date', columns="ohlcv")
+        df.rename_axis(index="date", columns="ohlcv")
         return df
 
     def _round_of_list(self, xlist):
@@ -76,4 +97,3 @@ class YahooFinance:
 
     def to_csv(self, file_name):
         self.result.to_csv(file_name)
-

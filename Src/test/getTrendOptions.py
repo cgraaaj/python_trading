@@ -40,6 +40,7 @@ triangel_stocks = []
 
 def get_uptrend(stock):
     # print(f"checking {stock}")
+    # print("analysing uptrend pattern")
     total.append(stock)
     rnge = 15
     ticker_data = dri.get_ticker_data(
@@ -69,6 +70,7 @@ def check_data(stock, ticker_data, rnge):
 
 
 def get_flat(stock):
+    # print("analysing flat pattern")
     rnge = 15
     ticker_data = dri.get_ticker_data(
         ticker=stock, range=str(rnge) + "d", interval="1d"
@@ -88,7 +90,7 @@ def get_flat(stock):
         )
     )
     if ticker_data["isFlat"].values.sum() >= ticker_data.shape[0] * 0.80:
-        print(ticker_data)
+        # print(ticker_data)
         res.append(stock)
 
 
@@ -131,6 +133,7 @@ def analyze_stock(data, stock):
 
 
 def get_triangle(stock):
+    # print("analysing triangel pattern")
     rnge = 14
     ticker_data = dri.get_ticker_data(
         ticker=stock, range=str(rnge) + "d", interval="1d"
@@ -144,17 +147,18 @@ def get_triangle(stock):
             ticker_data_body["Open"].to_list() + ticker_data_body["Close"].to_list()
         ),
     }
-    print(body)
+    # print(body)
     ticker_data["isTriange"] = (
         (ticker_data["Open"] <= body["head"]) & (ticker_data["Open"] >= body["tail"])
     ) & (
         (ticker_data["Close"] <= body["head"]) & (ticker_data["Close"] >= body["tail"])
     )
-    if ticker_data["isTriange"].values.sum() >= 12:
+    if ticker_data["isTriange"].values.sum() >= 14:
         res.append(stock)
 
 
 def get_nearSMA200(stock):
+    # print("analysing 200sma near pattern")
     rnge = 250
     ticker_data = dri.get_ticker_data(
         ticker=stock, range=str(rnge) + "d", interval="1d"
@@ -179,6 +183,21 @@ def get_nearSMA200(stock):
         res.append(stock)
 
 
+def get_triangle_both_inclined(stock):
+    # print("analysing triangle both decline pattern")
+    rnge = 5
+    ticker_data = dri.get_ticker_data(
+        ticker=stock, range=str(rnge) + "d", interval="1d"
+    )
+    temp = ticker_data[
+        (ticker_data["High"] > ticker_data["High"].shift(-1))
+        & (ticker_data["Low"] > ticker_data["Low"].shift(-1))
+    ]
+    if len(temp) == 5:
+        print(temp)
+        print(stock)
+
+
 sectors = pd.read_csv(
     "/home/pudge/Trading/python_trading/Src/nsetools/sectorKeywords.csv"
 )
@@ -191,14 +210,16 @@ for sec in sectors:
     stocks_of_sector = pd.DataFrame(nse.get_stocks_of_sector(sector=sec))
     stocks_of_sector["symbol"] = stocks_of_sector["symbol"].apply(lambda x: x + ".NS")
     for stock in stocks_of_sector["symbol"]:
-        # get_uptrend(stock)
+        get_uptrend(stock)
         # get_flat(stock)
         # get_triangle(stock)
-        get_nearSMA200(stock)
+        # get_nearSMA200(stock)
+        # get_triangle_both_inclined(stock)
 # stock = stock.split(".")[0]
 # data = nse.get_equity_option_chain(stock)
 # analyze_stock(data, stock)
 # get_nearSMA200("BANKBARODA.NS")
+# get_triangle_both_inclined("HDFC.NS")
 print(res)
 # optionStocks["Bullish"] = sorted(
 #     optionStocks["Bullish"], key=lambda stock: stock["Percent"], reverse=True
